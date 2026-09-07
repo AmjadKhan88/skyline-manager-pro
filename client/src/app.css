@@ -1,0 +1,9 @@
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #4f90e6 transparent;
+}
+.PhoneInputInput {
+    outline: 0;
+    border: 0;
+}
+
