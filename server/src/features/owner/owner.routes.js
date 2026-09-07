@@ -1,3 +1,8 @@
+/**
+ * features/owner/owner.routes.js — Owner Dashboard & Profile Routes
+ * All under /api/v1/owner — requires authenticate + tenantScope + authorize('owner')
+ */
+
 import express from "express";
 import { authenticate } from "../../shared/middlewares/authenticate.js";
 import { authorize } from "../../shared/middlewares/authorize.js";

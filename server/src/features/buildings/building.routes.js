@@ -1,3 +1,11 @@
+/**
+ * features/buildings/building.routes.js — Building CRUD Routes
+ * All under /api/v1/buildings
+ *
+ * GET  (read)  → owner + manager (both scoped to same owner's buildings)
+ * POST/PUT/DELETE (write) → owner only
+ */
+
 import express from "express";
 import { authenticate } from "../../shared/middlewares/authenticate.js";
 import { authorize } from "../../shared/middlewares/authorize.js";

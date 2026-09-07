@@ -1,3 +1,10 @@
+/**
+ * routes/index.js — API v1 Router
+ *
+ * Central mount point for all versioned API routes.
+ * Imported once in server.js as: app.use('/api/v1', v1Router)
+ */
+
 import express from "express";
 import authRoutes from "../features/auth/auth.routes.js";
 import ownerRoutes from "../features/owner/owner.routes.js";

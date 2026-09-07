@@ -1,3 +1,13 @@
+/**
+ * features/tenants/tenant.routes.js — Tenant & Lease Routes
+ * All under /api/v1/tenants
+ *
+ * AUTHORIZATION:
+ *   owner + manager → read tenants (scoped)
+ *   owner only      → create, update, delete
+ *   tenant (self)   → GET /my-lease (their own lease info only)
+ */
+
 import express from "express";
 import { authenticate } from "../../shared/middlewares/authenticate.js";
 import { authorize } from "../../shared/middlewares/authorize.js";

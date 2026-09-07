@@ -1,3 +1,8 @@
+/**
+ * features/staff/staff.routes.js — Manager & Employee Routes
+ * All under /api/v1/staff — owner only (read + write)
+ */
+
 import express from "express";
 import { authenticate } from "../../shared/middlewares/authenticate.js";
 import { authorize } from "../../shared/middlewares/authorize.js";
