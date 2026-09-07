@@ -19,7 +19,7 @@
 
 import bcrypt from "bcryptjs";
 import { DataTypes } from "sequelize";
-import { sequelize } from "../configs/db.js";
+import { sequelize } from "../config/db.js";
 
 const User = sequelize.define(
   "User",

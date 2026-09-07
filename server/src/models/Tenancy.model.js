@@ -13,7 +13,7 @@
  */
 
 import { DataTypes } from "sequelize";
-import { sequelize } from "../configs/db.js";
+import { sequelize } from "../config/db.js";
 
 const Tenancy = sequelize.define(
   "Tenancy",

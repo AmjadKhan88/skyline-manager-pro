@@ -17,7 +17,7 @@
  */
 
 import { DataTypes } from "sequelize";
-import { sequelize } from "../configs/db.js";
+import { sequelize } from "../config/db.js";
 
 const Invitation = sequelize.define(
   "Invitation",
