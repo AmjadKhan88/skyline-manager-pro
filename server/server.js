@@ -35,15 +35,15 @@ import cookieParser from "cookie-parser";
 import passport from "passport";
 
 // Configs
-import "./src/configs/passport.js";
-import { sequelize, connectDB } from "./src/configs/db.js";
+import "./src/config/passport.js";
+import { sequelize, connectDB } from "./src/config/db.js";
 
 // Models — import index to register all models + associations before sync
 import "./src/models/index.js";
 
 // Middleware
-import errorHandler from "./src/middlewares/errorHandler.js";
-import { apiLimiter, authLimiter } from "./src/middlewares/rateLimiter.js";
+import errorHandler from "./src/shared/middlewares/errorHandler.js";
+import { apiLimiter, authLimiter } from "./src/shared/middlewares/rateLimiter.js";
 
 // Versioned API Router (mounted at /api/v1 below — folder itself is flat, version lives in the mount path)
 import v1Router from "./src/routes/index.js";
