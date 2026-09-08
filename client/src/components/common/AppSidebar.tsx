@@ -48,7 +48,7 @@ export default function AppSidebar({ open, mobileOpen, onMobileClose }: Props) {
 
   const handleLogout = async () => {
     try {
-      await api.post('/api/v1/auth/logout');
+      await api.post('/auth/logout');
       setUser(null);
       navigate('/');
       toast.success('Logged out successfully');

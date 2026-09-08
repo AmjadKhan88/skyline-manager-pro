@@ -3,9 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "./app.css";
 import { BrowserRouter } from "react-router-dom";
-import { Provider } from "react-redux";
 import { GlobalProvider } from "./context/GlobalContext.jsx";
-import { store } from "./app/store.js";
 import ErrorBoundary from "./components/ErrorBoundary.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -19,9 +17,7 @@ createRoot(document.getElementById("root")!).render(
   >
     <BrowserRouter>
       <GlobalProvider>
-        <Provider store={store}>
           <App />
-        </Provider>
       </GlobalProvider>
     </BrowserRouter>
   </ErrorBoundary>,
