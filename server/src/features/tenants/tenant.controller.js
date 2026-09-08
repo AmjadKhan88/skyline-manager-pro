@@ -35,6 +35,14 @@ export const getAllTenants = asyncHandler(async (req, res) => {
   if (buildingId) tenancyWhere.buildingId = buildingId;
   if (paymentStatus) tenancyWhere.paymentStatus = paymentStatus;
 
+  let scopedToManager = false;
+  if (req.user.role === "manager") {
+    const myBuilding = await Building.findOne({ where: { managerId: req.user.id } });
+    if (!myBuilding) return ApiResponse.paginated(res, [], 0, page, limit, "No building assigned yet.");
+    tenancyWhere.buildingId = myBuilding.id;
+    scopedToManager = true;
+  }
+
   const { count, rows: tenants } = await User.findAndCountAll({
     where,
     limit: parseInt(limit),
@@ -47,7 +55,7 @@ export const getAllTenants = asyncHandler(async (req, res) => {
         model: Tenancy,
         as: "tenancies",
         where: tenancyWhere,
-        required: false,
+        required: scopedToManager, // must match a tenancy in the manager's building to appear at all
         include: [
           { model: Building, as: "building", attributes: ["id", "name", "address"], required: false },
         ],

@@ -16,19 +16,20 @@ export default function TenantDashboard() {
   const [lease, setLease] = useState<LeaseData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchLease = async () => {
-      try {
-        const res = await api.get('/tenants/my-lease');
-        setLease(res.data.data || res.data);
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || 'Failed to load lease details');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLease();
-  }, []);
+useEffect(() => {
+  const fetchLease = async () => {
+    try {
+      const res = await api.get('/tenants/my-lease');
+      const tenancies = res.data.data.tenancies || [];
+      setLease(tenancies.length > 0 ? tenancies[0] : null); // most recent lease
+    } catch (err) {
+      console.error('Failed to load lease', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchLease();
+}, []);
 
   if (loading) {
     return (

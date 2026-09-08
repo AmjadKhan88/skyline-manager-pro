@@ -20,14 +20,14 @@ import {
 
 const router = express.Router();
 
-router.use(authenticate, tenantScope, authorize("owner"));
+router.use(authenticate, tenantScope);
 
-router.get("/", getAllStaff);
-router.get("/:id", getStaffById);
-router.post("/", imagesUpload, createStaff);
-router.put("/:id", imagesUpload, updateStaff);
-router.patch("/:id/status", toggleStaffStatus);
-router.delete("/:id", deleteStaff);
-router.post("/:id/resend-credentials", resendCredentials);
+router.get("/", authorize("owner", "manager"), getAllStaff);
+router.get("/:id", authorize("owner", "manager"), getStaffById);
+router.post("/", authorize("owner"), imagesUpload, createStaff);
+router.put("/:id", authorize("owner"), imagesUpload, updateStaff);
+router.patch("/:id/status", authorize("owner"), toggleStaffStatus);
+router.delete("/:id", authorize("owner"), deleteStaff);
+router.post("/:id/resend-credentials", authorize("owner"), resendCredentials);
 
 export default router;

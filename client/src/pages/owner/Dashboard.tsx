@@ -100,7 +100,7 @@ export default function Dashboard() {
   const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/v1/owner/dashboard');
+      const res = await api.get('/owner/dashboard');
       setData(res.data.data);
     } catch {
       toast.error('Failed to load dashboard data');

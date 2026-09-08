@@ -18,19 +18,19 @@ export default function ManagerDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const res = await api.get('/owner/dashboard');
-        setData(res.data.data || res.data);
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || 'Failed to fetch dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, []);
+useEffect(() => {
+  const fetchDashboard = async () => {
+    try {
+      const res = await api.get('/manager/dashboard');
+      setData(res.data.data); // { building, employeesCount, tenantsCount, recentActivity }
+    } catch (err) {
+      console.error('Failed to load manager dashboard', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchDashboard();
+}, []);
 
   if (loading) {
     return (

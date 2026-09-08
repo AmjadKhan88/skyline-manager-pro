@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { set, z } from "zod";
+import {  z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -15,7 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { UserRole } from "../../App";
+import { UserRole } from "../../types";
 import useGlobal from "../../context/GlobalContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import api from "../../configs/api";
@@ -164,26 +164,15 @@ export function RoleModal({ selectedRole, onClose }: RoleModalProps) {
 
   try {
 
-    let url = '';
-
-    if(selectedRole === 'owner'){
-      if(state === 'login'){
-        url = '/api/auth/login';
-      }else{
-        url = '/api/auth/signup';
-      }
-    }else{
-      url = '/api/users/login';
-    }
-
+    const url = state === "login" ? "/auth/login" : "/auth/signup";
 
     const { data } = await api.post(url, result.data);
 
-    if(data.success){
+    if (data.success) {
       toast.success(data.message);
-      setUser(data.user);
+      setUser(data.data.user);
       onClose();
-      navigate(`/${data.role}`);
+      navigate(`/${data.data.user.role}`);
     }
 
   } catch (error:any) {
@@ -199,8 +188,8 @@ export function RoleModal({ selectedRole, onClose }: RoleModalProps) {
 
 
   const handleSocialLogin = (provider: string) => {
-    if(provider === "Google"){
-      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/auth/google`;
+    if (provider === "Google") {
+      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth/google`;
     }
     onClose();
   };

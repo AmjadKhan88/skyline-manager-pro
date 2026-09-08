@@ -18,20 +18,20 @@ interface UserData {
 export default function EmployeeDashboard() {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await api.get('/auth/me');
-        setUser(res.data.data || res.data);
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || 'Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
+  
+useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get('/auth/me');
+      setUser(res.data.data.user); // full user with .profile.building nested
+    } catch (err) {
+      console.error('Failed to load profile', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchProfile();
+}, []);
 
   if (loading) {
     return (

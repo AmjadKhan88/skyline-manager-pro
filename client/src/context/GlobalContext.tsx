@@ -22,7 +22,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data } = await api.get('/api/v1/auth/me');
+        const { data } = await api.get('/auth/me');
         if (data.success) setUser(data.data.user);
       } catch {
         setUser(null);

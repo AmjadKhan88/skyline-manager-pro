@@ -11,14 +11,14 @@ const EmployeeLayout = lazy(() => import('./layouts/EmployeeLayout'));
 const TenantLayout = lazy(() => import('./layouts/TenantLayout'));
 
 // Lazy loaded owner pages
-const OwnerDashboard = lazy(() => import('./pages/owner/Dashboard'));
-const OwnerBuildings = lazy(() => import('./pages/owner/Buildings'));
-const OwnerManagers = lazy(() => import('./pages/owner/Managers'));
-const OwnerEmployees = lazy(() => import('./pages/owner/Employees'));
-const OwnerTenants = lazy(() => import('./pages/owner/Tenants'));
-const OwnerAnalytics = lazy(() => import('./pages/owner/Analytics'));
-const OwnerFinancial = lazy(() => import('./pages/owner/Financial'));
-const OwnerSettings = lazy(() => import('./pages/owner/Settings'));
+import ManagerDashboard from "./pages/manager/Dashboard";
+import ManagerBuilding from "./pages/manager/Building";
+import ManagerEmployees from "./pages/manager/Employees";
+import ManagerTenants from "./pages/manager/Tenants";
+import EmployeeDashboard from "./pages/employee/Dashboard";
+import EmployeeBuilding from "./pages/employee/Building";
+import TenantDashboard from "./pages/tenant/Dashboard";
+import TenantLease from "./pages/tenant/Lease";
 
 // Other pages
 const Home = lazy(() => import('./pages/Home'));
@@ -38,62 +38,46 @@ export default function App() {
       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <Suspense fallback={<Loading />}>
         <Routes>
-          {/* Public */}
-          <Route path="/" element={<Home />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/change-password" element={<ChangePassword />} />
-
-          {/* Owner Routes */}
           <Route
-            path="/owner"
+            path="/manager"
             element={
-              <ProtectedRoute user={user} role="owner" loading={loading}>
-                <OwnerLayout />
+              <ProtectedRoute allowedRoles={["manager"]}>
+                <ManagerLayout />
               </ProtectedRoute>
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<OwnerDashboard />} />
-            <Route path="buildings" element={<OwnerBuildings />} />
-            <Route path="managers" element={<OwnerManagers />} />
-            <Route path="employees" element={<OwnerEmployees />} />
-            <Route path="tenants" element={<OwnerTenants />} />
-            <Route path="analytics" element={<OwnerAnalytics />} />
-            <Route path="financial" element={<OwnerFinancial />} />
-            <Route path="settings" element={<OwnerSettings />} />
+            <Route path="dashboard" element={<ManagerDashboard />} />
+            <Route path="building" element={<ManagerBuilding />} />
+            <Route path="employees" element={<ManagerEmployees />} />
+            <Route path="tenants" element={<ManagerTenants />} />
           </Route>
 
-          {/* Manager Routes */}
           <Route
-            path="/manager/*"
+            path="/employee"
             element={
-              <ProtectedRoute user={user} role="manager" loading={loading}>
-                <ManagerLayout />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Employee Routes */}
-          <Route
-            path="/employee/*"
-            element={
-              <ProtectedRoute user={user} role="employee" loading={loading}>
+              <ProtectedRoute allowedRoles={["employee"]}>
                 <EmployeeLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<EmployeeDashboard />} />
+            <Route path="building" element={<EmployeeBuilding />} />
+          </Route>
 
-          {/* Tenant Routes */}
           <Route
-            path="/tenant/*"
+            path="/tenant"
             element={
-              <ProtectedRoute user={user} role="tenant" loading={loading}>
+              <ProtectedRoute allowedRoles={["tenant"]}>
                 <TenantLayout />
               </ProtectedRoute>
             }
-          />
-
-          <Route path="*" element={<NotFound />} />
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<TenantDashboard />} />
+            <Route path="lease" element={<TenantLease />} />
+          </Route>
         </Routes>
       </Suspense>
     </div>

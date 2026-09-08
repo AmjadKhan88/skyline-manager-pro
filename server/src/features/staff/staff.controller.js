@@ -32,7 +32,19 @@ export const getAllStaff = asyncHandler(async (req, res) => {
     role: role ? role : { [Op.in]: ["manager", "employee"] },
   };
 
+  // Managers can only ever see employees, never other managers, and only in their own building
+  let managerBuildingId = null;
+  if (req.user.role === "manager") {
+    where.role = "employee";
+    const myBuilding = await Building.findOne({ where: { managerId: req.user.id } });
+    if (!myBuilding) {
+      return ApiResponse.paginated(res, [], 0, page, limit, "No building assigned yet.");
+    }
+    managerBuildingId = myBuilding.id;
+  }
+
   if (status) where.status = status;
+
   if (search) {
     where[Op.or] = [
       { name: { [Op.iLike]: `%${search}%` } },
@@ -42,6 +54,7 @@ export const getAllStaff = asyncHandler(async (req, res) => {
 
   const profileWhere = {};
   if (buildingId) profileWhere.buildingId = buildingId;
+  if (managerBuildingId) profileWhere.buildingId = managerBuildingId; // manager scoping wins
 
   const { count, rows: staff } = await User.findAndCountAll({
     where,
@@ -69,6 +82,14 @@ export const getAllStaff = asyncHandler(async (req, res) => {
 export const getStaffById = asyncHandler(async (req, res) => {
   const user = await findStaffByIdScoped(req.params.id, req.scopedOwnerId);
   if (!user) return ApiResponse.error(res, 404, "Staff member not found.");
+
+  if (req.user.role === "manager") {
+    const myBuilding = await Building.findOne({ where: { managerId: req.user.id } });
+    if (user.role !== "employee" || !myBuilding || user.profile?.buildingId !== myBuilding.id) {
+      return ApiResponse.error(res, 403, "You can only view employees in your own building.");
+    }
+  }
+
   user.password = undefined;
   return ApiResponse.success(res, 200, "Staff member fetched.", { staff: user });
 });

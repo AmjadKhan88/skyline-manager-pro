@@ -6,6 +6,34 @@
  */
 
 // ─── Core User Types ──────────────────────────────────────────────────────────
+export interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+  errorTimestamp?: number;
+}
+
+export interface ErrorBoundaryFallbackProps {
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+  resetError: () => void;
+  boundaryName?: string;
+  isFullScreen?: boolean;
+}
+
+export interface ErrorBoundaryProps {
+  children: import("react").ReactNode;
+  FallbackComponent?: import("react").ComponentType<ErrorBoundaryFallbackProps>;
+  fallbackProps?: Partial<ErrorBoundaryFallbackProps>;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  onReset?: () => void;
+  reportUrl?: string;
+  boundaryName?: string;
+  resetKeys?: any[];
+  context?: Record<string, any>;
+  isFullScreen?: boolean;
+}
+
 
 export type UserRole = "owner" | "manager" | "employee" | "tenant";
 export type UserStatus = "active" | "inactive" | "pending";

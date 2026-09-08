@@ -8,7 +8,8 @@
  * are created BY the owner via the staff/tenant features.
  */
 
-import { User, OwnerProfile } from "../../models/index.js";
+import { User, OwnerProfile, UserProfile, Building } from "../../models/index.js";
+
 import {
   generateToken,
   setCookieToken,
@@ -100,7 +101,23 @@ export const logout = asyncHandler(async (req, res) => {
 
 // ─── GET CURRENT USER (Auth Check) ────────────────────────────────────────────
 export const getMe = asyncHandler(async (req, res) => {
-  return ApiResponse.success(res, 200, "Authenticated.", { user: req.user });
+  let user = req.user;
+
+  if (["manager", "employee", "tenant"].includes(user.role)) {
+    user = await User.findByPk(user.id, {
+      attributes: { exclude: ["password"] },
+      include: [
+        {
+          model: UserProfile,
+          as: "profile",
+          required: false,
+          include: [{ model: Building, as: "building", attributes: ["id", "name", "address", "buildingType"], required: false }],
+        },
+      ],
+    });
+  }
+
+  return ApiResponse.success(res, 200, "Authenticated.", { user });
 });
 
 // ─── SEND EMAIL VERIFICATION ──────────────────────────────────────────────────

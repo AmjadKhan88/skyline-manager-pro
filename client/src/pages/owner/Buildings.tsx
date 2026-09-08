@@ -59,7 +59,7 @@ export default function Buildings() {
       const params: Record<string, string | number> = { page, limit: LIMIT };
       if (search) params.search = search;
       if (typeFilter) params.type = typeFilter;
-      const { data } = await api.get('/api/v1/buildings', { params });
+      const { data } = await api.get('/buildings', { params });
       setBuildings(data.data);
       setTotal(data.pagination.total);
     } catch {
@@ -92,10 +92,10 @@ export default function Buildings() {
         units: form.units ? parseInt(form.units) : undefined,
       };
       if (editTarget) {
-        await api.put(`/api/v1/buildings/${editTarget.id}`, payload);
+        await api.put(`/buildings/${editTarget.id}`, payload);
         toast.success('Building updated!');
       } else {
-        await api.post('/api/v1/buildings', payload);
+        await api.post('/buildings', payload);
         toast.success('Building created!');
       }
       setModalOpen(false);
@@ -110,7 +110,7 @@ export default function Buildings() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await api.delete(`/api/v1/buildings/${deleteId}`);
+      await api.delete(`/buildings/${deleteId}`);
       toast.success('Building deleted');
       setDeleteId(null);
       fetchBuildings();
