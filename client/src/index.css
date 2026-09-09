@@ -6,6 +6,8 @@
   --color-brand: #0ea5e9;
 
   --animate-building: building 1.2s ease-in-out infinite;
+
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
 }
 
 @keyframes building {

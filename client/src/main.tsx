@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "./app.css";
 import { BrowserRouter } from "react-router-dom";
-import { GlobalProvider } from "./context/GlobalContext.jsx";
+import { GlobalProvider } from "./context/GlobalContext";
 import ErrorBoundary from "./components/ErrorBoundary.tsx";
 
 createRoot(document.getElementById("root")!).render(
