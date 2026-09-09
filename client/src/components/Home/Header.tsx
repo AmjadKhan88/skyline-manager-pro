@@ -6,15 +6,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { useGlobal } from '../../context/GlobalContext';
 
-interface HeaderProps {
-  darkMode: boolean;
-  setDarkMode: (value: boolean) => void;
-  language: string;
-  setLanguage: (value: string) => void;
-}
 
-export function Header({ darkMode, setDarkMode, language, setLanguage }: HeaderProps) {
+
+export function Header() {
   const languages = {
     en: 'English',
     es: 'Español',
@@ -22,6 +18,9 @@ export function Header({ darkMode, setDarkMode, language, setLanguage }: HeaderP
     de: 'Deutsch',
     zh: '中文',
   };
+
+    const {darkMode, setDarkMode, language, setLanguage} = useGlobal();
+
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">

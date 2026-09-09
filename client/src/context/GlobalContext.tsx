@@ -33,10 +33,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     fetchUser();
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
+
 
   return (
     <GlobalContext.Provider value={{ user, setUser, loading, darkMode, setDarkMode }}>

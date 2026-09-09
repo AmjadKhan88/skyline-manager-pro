@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { UserRole } from '../../App';
+import { UserRole } from '../../types/index';
 import React, { useState } from 'react';
 import {toast} from 'react-hot-toast';
 interface CTASectionProps {

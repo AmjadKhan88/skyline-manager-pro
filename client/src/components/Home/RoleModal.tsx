@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {  z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
@@ -11,14 +11,13 @@ import {
   Briefcase,
   Check,
   HandPlatter,
-  Facebook,
   Loader2,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { UserRole } from "../../types";
+import { UserRole } from "../../types/index";
 import useGlobal from "../../context/GlobalContext";
-import { Navigate, useNavigate } from "react-router-dom";
-import api from "../../configs/api";
+import { useNavigate } from "react-router-dom";
+import api from "../../lib/api";
 
 /* -------------------- ROLE CONFIG -------------------- */
 
@@ -75,7 +74,7 @@ const authSchema = z.object({
   state: z.enum(["login", "signup"]),
   name: z.string().optional(), // start optional
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 })
 .superRefine((data, ctx) => {
   if (data.role === "owner" && data.state === "signup") {
@@ -96,20 +95,23 @@ type AuthFormData = z.infer<typeof authSchema>;
 /* -------------------- COMPONENT -------------------- */
 
 interface RoleModalProps {
-  selectedRole: UserRole;
+  selectedRole: UserRole | null;
   onClose: () => void;
 }
 
 export function RoleModal({ selectedRole, onClose }: RoleModalProps) {  
-  const config = roleConfig[selectedRole];
-  const {user,setUser} = useGlobal();
+  const { user, setUser } = useGlobal();
   const navigate = useNavigate();
 
-
-  if(user && user.role) navigate(`/${user.role}`);
-
+  useEffect(() => {
+    if (user?.role) {
+      navigate(`/${user.role}`);
+    }
+  }, [user, navigate]);
 
   const [state, setState] = useState<"login" | "signup">("login");
+
+
   const [form, setForm] = useState<AuthFormData>({
     role: selectedRole,
     state: "login",
@@ -122,6 +124,7 @@ export function RoleModal({ selectedRole, onClose }: RoleModalProps) {
   const [serverError, setServerError] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
+const config = roleConfig[selectedRole];
 
   if (!config) return null;
   const Icon = config.icon;

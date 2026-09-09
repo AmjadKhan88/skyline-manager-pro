@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { Building2, Users, Briefcase, TrendingUp, Wrench, CreditCard } from 'lucide-react';
 import { Button } from '../ui/button';
-import { UserRole } from '../../App';
+import { UserRole } from '../../types/index';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { useState } from 'react';
 import useGlobal from '../../context/GlobalContext';
