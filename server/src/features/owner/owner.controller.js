@@ -4,7 +4,13 @@
  * All endpoints here are scoped to the authenticated owner via req.scopedOwnerId.
  */
 
-import { User, UserProfile, Building, Tenancy, OwnerProfile } from "../../models/index.js";
+import {
+  User,
+  UserProfile,
+  Building,
+  Tenancy,
+  OwnerProfile,
+} from "../../models/index.js";
 import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/utils/ApiResponse.js";
 import { Op } from "sequelize";
@@ -36,16 +42,31 @@ export const getDashboard = asyncHandler(async (req, res) => {
     User.count({ where: { ownerId, role: "tenant" } }),
     User.count({ where: { ownerId, role: "tenant", status: "active" } }),
     Tenancy.count({ where: { ownerId, status: "active" } }),
-    Tenancy.count({ where: { ownerId, paymentStatus: "paid", status: "active" } }),
-    Tenancy.count({ where: { ownerId, paymentStatus: "unpaid", status: "active" } }),
-    Tenancy.count({ where: { ownerId, paymentStatus: "overdue", status: "active" } }),
+    Tenancy.count({
+      where: { ownerId, paymentStatus: "paid", status: "active" },
+    }),
+    Tenancy.count({
+      where: { ownerId, paymentStatus: "unpaid", status: "active" },
+    }),
+    Tenancy.count({
+      where: { ownerId, paymentStatus: "overdue", status: "active" },
+    }),
   ]);
 
   const recentBuildings = await Building.findAll({
     where: { ownerId },
     order: [["createdAt", "DESC"]],
     limit: 5,
-    attributes: ["id", "name", "address", "buildingType", "status", "units", "occupancy", "createdAt"],
+    attributes: [
+      "id",
+      "name",
+      "address",
+      "buildingType",
+      "status",
+      "units",
+      "occupancy",
+      "createdAt",
+    ],
   });
 
   const recentStaff = await User.findAll({
@@ -56,8 +77,33 @@ export const getDashboard = asyncHandler(async (req, res) => {
     order: [["createdAt", "DESC"]],
     limit: 5,
     attributes: ["id", "name", "email", "role", "status", "createdAt"],
-    include: [{ model: UserProfile, as: "profile", attributes: ["jobTitle", "buildingId"] }],
+    include: [
+      {
+        model: UserProfile,
+        as: "profile",
+        attributes: ["jobTitle", "buildingId"],
+      },
+    ],
   });
+
+  // ── Revenue snapshot (current state, not a historical trend — see PROJECT_CONTEXT.md) ──
+  const [expectedRevenue, collectedRevenue, overdueRevenue, totalUnits] =
+    await Promise.all([
+      Tenancy.sum("monthlyRent", { where: { ownerId, status: "active" } }),
+      Tenancy.sum("monthlyRent", {
+        where: { ownerId, status: "active", paymentStatus: "paid" },
+      }),
+      Tenancy.sum("monthlyRent", {
+        where: { ownerId, status: "active", paymentStatus: "overdue" },
+      }),
+      Building.sum("units", { where: { ownerId } }),
+    ]);
+
+  const occupiedUnits = totalTenancies; // one active tenancy = one occupied unit
+  const vacantUnits = Math.max((totalUnits || 0) - occupiedUnits, 0);
+  const occupancyRate = totalUnits
+    ? Math.round((occupiedUnits / totalUnits) * 100)
+    : 0;
 
   return ApiResponse.success(res, 200, "Dashboard data fetched.", {
     stats: {
@@ -71,6 +117,17 @@ export const getDashboard = asyncHandler(async (req, res) => {
         unpaid: unpaidTenancies,
         overdue: overdueTenancies,
       },
+    },
+    revenue: {
+      expected: expectedRevenue || 0,
+      collected: collectedRevenue || 0,
+      overdue: overdueRevenue || 0,
+    },
+    occupancy: {
+      totalUnits: totalUnits || 0,
+      occupiedUnits,
+      vacantUnits,
+      occupancyRate,
     },
     recentBuildings,
     recentStaff,
@@ -104,5 +161,8 @@ export const updateProfile = asyncHandler(async (req, res) => {
   });
 
   user.password = undefined;
-  return ApiResponse.success(res, 200, "Profile updated successfully.", { user, profile });
+  return ApiResponse.success(res, 200, "Profile updated successfully.", {
+    user,
+    profile,
+  });
 });

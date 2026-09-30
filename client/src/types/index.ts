@@ -167,6 +167,8 @@ export interface DashboardStats {
 
 export interface DashboardData {
   stats: DashboardStats;
+  revenue: { expected: number; collected: number; overdue: number };
+  occupancy: { totalUnits: number; occupiedUnits: number; vacantUnits: number; occupancyRate: number };
   recentBuildings: Building[];
   recentStaff: User[];
 }
