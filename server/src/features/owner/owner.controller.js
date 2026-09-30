@@ -86,6 +86,31 @@ export const getDashboard = asyncHandler(async (req, res) => {
     ],
   });
 
+  const recentTenants = await User.findAll({
+    where: { ownerId, role: "tenant" },
+    order: [["createdAt", "DESC"]],
+    limit: 5,
+    attributes: ["id", "name", "email", "createdAt"],
+    include: [
+      {
+        model: Tenancy,
+        as: "tenancies",
+        where: { ownerId },
+        required: false,
+        limit: 1,
+        order: [["createdAt", "DESC"]],
+        include: [
+          {
+            model: Building,
+            as: "building",
+            attributes: ["id", "name"],
+            required: false,
+          },
+        ],
+      },
+    ],
+  });
+
   // ── Revenue snapshot (current state, not a historical trend — see PROJECT_CONTEXT.md) ──
   const [expectedRevenue, collectedRevenue, overdueRevenue, totalUnits] =
     await Promise.all([
@@ -131,6 +156,7 @@ export const getDashboard = asyncHandler(async (req, res) => {
     },
     recentBuildings,
     recentStaff,
+    recentTenants,
   });
 });
 

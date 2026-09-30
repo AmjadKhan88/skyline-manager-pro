@@ -171,6 +171,7 @@ export interface DashboardData {
   occupancy: { totalUnits: number; occupiedUnits: number; vacantUnits: number; occupancyRate: number };
   recentBuildings: Building[];
   recentStaff: User[];
+  recentTenants: User[];
 }
 
 // ─── API Response Types ───────────────────────────────────────────────────────

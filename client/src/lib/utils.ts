@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-
 /** Merge Tailwind classes safely — used by shadcn/ui components */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -43,4 +42,19 @@ export function getErrorMessage(error: unknown): string {
   }
   if (error instanceof Error) return error.message;
   return "An unexpected error occurred";
+}
+
+export function timeAgo(date: string | Date): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  const units: [number, string][] = [
+    [60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.345, 'week'], [12, 'month'], [Number.POSITIVE_INFINITY, 'year'],
+  ];
+  let value = seconds;
+  let unit = 'second';
+  for (const [amount, name] of units) {
+    if (value < amount) { unit = name; break; }
+    value = Math.floor(value / amount);
+    unit = name;
+  }
+  return value <= 1 && unit === 'second' ? 'just now' : `${value} ${unit}${value !== 1 ? 's' : ''} ago`;
 }
