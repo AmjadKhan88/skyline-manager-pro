@@ -37,8 +37,18 @@ export const getAllTenants = asyncHandler(async (req, res) => {
 
   let scopedToManager = false;
   if (req.user.role === "manager") {
-    const myBuilding = await Building.findOne({ where: { managerId: req.user.id } });
-    if (!myBuilding) return ApiResponse.paginated(res, [], 0, page, limit, "No building assigned yet.");
+    const myBuilding = await Building.findOne({
+      where: { managerId: req.user.id },
+    });
+    if (!myBuilding)
+      return ApiResponse.paginated(
+        res,
+        [],
+        0,
+        page,
+        limit,
+        "No building assigned yet.",
+      );
     tenancyWhere.buildingId = myBuilding.id;
     scopedToManager = true;
   }
@@ -57,13 +67,25 @@ export const getAllTenants = asyncHandler(async (req, res) => {
         where: tenancyWhere,
         required: scopedToManager, // must match a tenancy in the manager's building to appear at all
         include: [
-          { model: Building, as: "building", attributes: ["id", "name", "address"], required: false },
+          {
+            model: Building,
+            as: "building",
+            attributes: ["id", "name", "address"],
+            required: false,
+          },
         ],
       },
     ],
   });
 
-  return ApiResponse.paginated(res, tenants, count, page, limit, "Tenants fetched.");
+  return ApiResponse.paginated(
+    res,
+    tenants,
+    count,
+    page,
+    limit,
+    "Tenants fetched.",
+  );
 });
 
 // ─── GET SINGLE TENANT ────────────────────────────────────────────────────────
@@ -77,7 +99,12 @@ export const getTenantById = asyncHandler(async (req, res) => {
         model: Tenancy,
         as: "tenancies",
         include: [
-          { model: Building, as: "building", attributes: ["id", "name", "address"], required: false },
+          {
+            model: Building,
+            as: "building",
+            attributes: ["id", "name", "address"],
+            required: false,
+          },
         ],
         required: false,
       },
@@ -91,16 +118,35 @@ export const getTenantById = asyncHandler(async (req, res) => {
 // ─── CREATE TENANT ────────────────────────────────────────────────────────────
 export const createTenant = asyncHandler(async (req, res) => {
   const {
-    name, email, phone,
-    buildingId, unitNumber, monthlyRent, depositAmount,
-    leaseStart, leaseEnd, extraFields,
+    name,
+    email,
+    phone,
+    buildingId,
+    unitNumber,
+    monthlyRent,
+    depositAmount,
+    leaseStart,
+    leaseEnd,
+    extraFields,
   } = req.body;
 
   const existing = await User.findOne({ where: { email } });
-  if (existing) return ApiResponse.error(res, 400, "A user with this email already exists.");
+  if (existing)
+    return ApiResponse.error(
+      res,
+      400,
+      "A user with this email already exists.",
+    );
 
-  const building = await Building.findOne({ where: { id: buildingId, ownerId: req.scopedOwnerId } });
-  if (!building) return ApiResponse.error(res, 400, "Invalid building: not found under your account.");
+  const building = await Building.findOne({
+    where: { id: buildingId, ownerId: req.scopedOwnerId },
+  });
+  if (!building)
+    return ApiResponse.error(
+      res,
+      400,
+      "Invalid building: not found under your account.",
+    );
 
   const tempPassword = generateTempPassword();
 
@@ -131,7 +177,9 @@ export const createTenant = asyncHandler(async (req, res) => {
     status: "active",
   });
 
-  const owner = await User.findByPk(req.scopedOwnerId, { attributes: ["name"] });
+  const owner = await User.findByPk(req.scopedOwnerId, {
+    attributes: ["name"],
+  });
   try {
     await sendCredentials({
       toEmail: email,
@@ -146,9 +194,15 @@ export const createTenant = asyncHandler(async (req, res) => {
   }
 
   user.password = undefined;
-  return ApiResponse.success(res, 201, `Tenant created. Credentials sent to ${email}.`, { tenant: user, tenancy });
+  return ApiResponse.success(
+    res,
+    201,
+    `Tenant created. Credentials sent to ${email}.`,
+    { tenant: user, tenancy },
+  );
 });
 
+// ─── UPDATE TENANT ────────────────────────────────────────────────────────────
 // ─── UPDATE TENANT ────────────────────────────────────────────────────────────
 export const updateTenant = asyncHandler(async (req, res) => {
   const tenantUser = await User.findOne({
@@ -157,7 +211,19 @@ export const updateTenant = asyncHandler(async (req, res) => {
   });
   if (!tenantUser) return ApiResponse.error(res, 404, "Tenant not found.");
 
-  const { name, email, status, phone, extraFields } = req.body;
+  const {
+    name,
+    email,
+    status,
+    phone,
+    extraFields,
+    buildingId,
+    unitNumber,
+    monthlyRent,
+    depositAmount,
+    leaseStart,
+    leaseEnd,
+  } = req.body;
 
   await updateStaffWithProfile({
     user: tenantUser,
@@ -170,8 +236,52 @@ export const updateTenant = asyncHandler(async (req, res) => {
     files: {},
   });
 
+  // Lease/unit details live on the Tenancy record, not the User — update the
+  // most recent active one if any lease fields were submitted.
+  const leaseFieldsProvided = [
+    buildingId,
+    unitNumber,
+    monthlyRent,
+    depositAmount,
+    leaseStart,
+    leaseEnd,
+  ].some((v) => v !== undefined && v !== "");
+
+  let tenancy = null;
+  if (leaseFieldsProvided) {
+    tenancy = await Tenancy.findOne({
+      where: {
+        tenantId: tenantUser.id,
+        ownerId: req.scopedOwnerId,
+        status: "active",
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (tenancy) {
+      if (buildingId) {
+        const building = await Building.findOne({
+          where: { id: buildingId, ownerId: req.scopedOwnerId },
+        });
+        if (!building) return ApiResponse.error(res, 400, "Invalid building.");
+        tenancy.buildingId = buildingId;
+      }
+      if (unitNumber !== undefined) tenancy.unitNumber = unitNumber;
+      if (monthlyRent !== undefined)
+        tenancy.monthlyRent = parseFloat(monthlyRent);
+      if (depositAmount !== undefined)
+        tenancy.depositAmount = parseFloat(depositAmount);
+      if (leaseStart !== undefined) tenancy.leaseStart = leaseStart;
+      if (leaseEnd !== undefined) tenancy.leaseEnd = leaseEnd || null;
+      await tenancy.save();
+    }
+  }
+
   tenantUser.password = undefined;
-  return ApiResponse.success(res, 200, "Tenant updated successfully.", { tenant: tenantUser });
+  return ApiResponse.success(res, 200, "Tenant updated successfully.", {
+    tenant: tenantUser,
+    tenancy,
+  });
 });
 
 // ─── UPDATE PAYMENT STATUS ────────────────────────────────────────────────────
@@ -198,7 +308,9 @@ export const deleteTenant = asyncHandler(async (req, res) => {
   });
   if (!tenantUser) return ApiResponse.error(res, 404, "Tenant not found.");
 
-  await Tenancy.destroy({ where: { tenantId: tenantUser.id, ownerId: req.scopedOwnerId } });
+  await Tenancy.destroy({
+    where: { tenantId: tenantUser.id, ownerId: req.scopedOwnerId },
+  });
   await deleteStaffWithCleanup(tenantUser, tenantUser.profile);
 
   return ApiResponse.success(res, 200, "Tenant deleted successfully.");
@@ -209,10 +321,16 @@ export const getMyLease = asyncHandler(async (req, res) => {
   const tenancies = await Tenancy.findAll({
     where: { tenantId: req.user.id },
     include: [
-      { model: Building, as: "building", attributes: ["id", "name", "address", "buildingType"] },
+      {
+        model: Building,
+        as: "building",
+        attributes: ["id", "name", "address", "buildingType"],
+      },
     ],
     order: [["createdAt", "DESC"]],
   });
 
-  return ApiResponse.success(res, 200, "Your lease information.", { tenancies });
+  return ApiResponse.success(res, 200, "Your lease information.", {
+    tenancies,
+  });
 });
