@@ -1,45 +1,50 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import Loading from './components/loaders/Loading';
-import useGlobal from './context/GlobalContext';
-import ProtectedRoute from './middleware/ProtectedRoute';
+import { lazy, Suspense } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import Loading from "./components/loaders/Loading";
+import useGlobal from "./context/GlobalContext";
+import ProtectedRoute from "./middleware/ProtectedRoute";
 
 // Public
-const Home = lazy(() => import('./pages/Home'));
-const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
-const ChangePassword = lazy(() => import('./pages/auth/ChangePassword'));
-const NotFound = lazy(() => import('./components/Notfound'));
+const Home = lazy(() => import("./pages/Home"));
+const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
+const ChangePassword = lazy(() => import("./pages/auth/ChangePassword"));
+const NotFound = lazy(() => import("./components/Notfound"));
 
 // Layouts
-const OwnerLayout = lazy(() => import('./layouts/OwnerLayout'));
-const ManagerLayout = lazy(() => import('./layouts/ManagerLayout'));
-const EmployeeLayout = lazy(() => import('./layouts/EmployeeLayout'));
-const TenantLayout = lazy(() => import('./layouts/TenantLayout'));
+const OwnerLayout = lazy(() => import("./layouts/OwnerLayout"));
+const ManagerLayout = lazy(() => import("./layouts/ManagerLayout"));
+const EmployeeLayout = lazy(() => import("./layouts/EmployeeLayout"));
+const TenantLayout = lazy(() => import("./layouts/TenantLayout"));
 
 // Owner pages
-const OwnerDashboard = lazy(() => import('./pages/owner/Dashboard'));
-const OwnerBuildings = lazy(() => import('./pages/owner/Buildings'));
-const OwnerManagers = lazy(() => import('./pages/owner/Managers'));
-const OwnerEmployees = lazy(() => import('./pages/owner/Employees'));
-const OwnerTenants = lazy(() => import('./pages/owner/Tenants'));
-const OwnerAnalytics = lazy(() => import('./pages/owner/Analytics'));
-const OwnerFinancial = lazy(() => import('./pages/owner/Financial'));
-const OwnerSettings = lazy(() => import('./pages/owner/Settings'));
+const OwnerDashboard = lazy(() => import("./pages/owner/Dashboard"));
+const OwnerBuildings = lazy(() => import("./pages/owner/Buildings"));
+const OwnerManagers = lazy(() => import("./pages/owner/Managers"));
+const OwnerEmployees = lazy(() => import("./pages/owner/Employees"));
+const OwnerTenants = lazy(() => import("./pages/owner/Tenants"));
+const OwnerAnalytics = lazy(() => import("./pages/owner/Analytics"));
+const OwnerFinancial = lazy(() => import("./pages/owner/Financial"));
+const OwnerSettings = lazy(() => import("./pages/owner/Settings"));
 
 // Manager pages
-const ManagerDashboard = lazy(() => import('./pages/manager/Dashboard'));
-const ManagerBuilding = lazy(() => import('./pages/manager/Building'));
-const ManagerEmployees = lazy(() => import('./pages/manager/Employees'));
-const ManagerTenants = lazy(() => import('./pages/manager/Tenants'));
+const ManagerDashboard = lazy(() => import("./pages/manager/Dashboard"));
+const ManagerBuilding = lazy(() => import("./pages/manager/Building"));
+const ManagerEmployees = lazy(() => import("./pages/manager/Employees"));
+const ManagerTenants = lazy(() => import("./pages/manager/Tenants"));
 
 // Employee pages
-const EmployeeDashboard = lazy(() => import('./pages/employee/Dashboard'));
-const EmployeeBuilding = lazy(() => import('./pages/employee/Building'));
+const EmployeeDashboard = lazy(() => import("./pages/employee/Dashboard"));
+const EmployeeBuilding = lazy(() => import("./pages/employee/Building"));
 
 // Tenant pages
-const TenantDashboard = lazy(() => import('./pages/tenant/Dashboard'));
-const TenantLease = lazy(() => import('./pages/tenant/Lease'));
+const TenantDashboard = lazy(() => import("./pages/tenant/Dashboard"));
+const TenantLease = lazy(() => import("./pages/tenant/Lease"));
+
+const OwnerMaintenance = lazy(() => import("./pages/owner/Maintenance"));
+const ManagerMaintenance = lazy(() => import("./pages/manager/Maintenance"));
+const EmployeeMaintenance = lazy(() => import("./pages/employee/Maintenance"));
+const TenantMaintenance = lazy(() => import("./pages/tenant/Maintenance"));
 
 export default function App() {
   const { user, loading } = useGlobal();
@@ -75,6 +80,7 @@ export default function App() {
             <Route path="tenants" element={<OwnerTenants />} />
             <Route path="analytics" element={<OwnerAnalytics />} />
             <Route path="financial" element={<OwnerFinancial />} />
+            <Route path="maintenance" element={<OwnerMaintenance />} />
             <Route path="settings" element={<OwnerSettings />} />
           </Route>
 
@@ -92,6 +98,7 @@ export default function App() {
             <Route path="building" element={<ManagerBuilding />} />
             <Route path="employees" element={<ManagerEmployees />} />
             <Route path="tenants" element={<ManagerTenants />} />
+            <Route path="maintenance" element={<ManagerMaintenance />} />
           </Route>
 
           {/* ── Employee ──────────────────────────────────────────── */}
@@ -106,6 +113,7 @@ export default function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<EmployeeDashboard />} />
             <Route path="building" element={<EmployeeBuilding />} />
+            <Route path="maintenance" element={<EmployeeMaintenance />} />
           </Route>
 
           {/* ── Tenant ────────────────────────────────────────────── */}
@@ -120,6 +128,7 @@ export default function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<TenantDashboard />} />
             <Route path="lease" element={<TenantLease />} />
+            <Route path="maintenance" element={<TenantMaintenance />} />
           </Route>
 
           {/* Catch-all */}

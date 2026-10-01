@@ -47,18 +47,19 @@ server/
 │   ├── models/                    ← stays centralized (Sequelize needs this for associations)
 │   │   ├── User.model.js, OwnerProfile.model.js, UserProfile.model.js,
 │   │   │   Building.model.js, Tenancy.model.js, Invitation.model.js,
-│   │   │   associations.js, index.js
+│   │   │   MaintenanceRequest.model.js, associations.js, index.js
 │   ├── shared/
 │   │   ├── middlewares/  (authenticate, authorize, tenantScope, validate, errorHandler, rateLimiter, multer)
 │   │   ├── utils/         (ApiResponse, asyncHandler)
 │   │   └── services/      (token.service — was auth.service, email.service, cloudinary.service)
 │   ├── features/
-│   │   ├── auth/       (controller, routes, validator)
-│   │   ├── owner/      (controller, routes)
-│   │   ├── buildings/  (controller, routes)
-│   │   ├── staff/      (controller, service, routes) — managers + employees
-│   │   ├── tenants/    (controller, routes)
-│   │   └── manager/    (controller, routes) — manager's OWN scoped dashboard/building view
+│   │   ├── auth/        (controller, routes, validator)
+│   │   ├── owner/       (controller, routes) — also has analytics/financial endpoints, see 6b
+│   │   ├── buildings/   (controller, routes)
+│   │   ├── staff/       (controller, service, routes) — managers + employees
+│   │   ├── tenants/     (controller, routes)
+│   │   ├── manager/     (controller, routes) — manager's OWN scoped dashboard/building view
+│   │   └── maintenance/ (controller, routes, validator) — work orders, see section 6d
 │   └── routes/index.js  (mounts all feature routers under /api/v1)
 └── server.js
 ```
@@ -96,13 +97,14 @@ client/src/
 ├── pages/
 │   ├── Home.tsx           ← public landing page + role-select buttons → opens RoleModal
 │   ├── auth/               (VerifyEmail.tsx, ChangePassword.tsx)
-│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics*, Financial*)
-│   ├── manager/            (Dashboard, Building, Employees, Tenants)
-│   ├── employee/           (Dashboard, Building)
-│   └── tenant/             (Dashboard, Lease)
+│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance)
+│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance)
+│   ├── employee/           (Dashboard, Building, Maintenance)
+│   └── tenant/             (Dashboard, Lease, Maintenance)
+├── lib/maintenanceStyles.ts  ← shared category/priority/status badge config, used by all 4 Maintenance pages
 └── types/index.ts          ← THE canonical UserRole/User/Building/Tenancy/etc. types. Never redeclare UserRole locally anywhere else.
 ```
-*(`Analytics.tsx` and `Financial.tsx` are still visual-only placeholders — no backend endpoint exists for revenue/analytics data yet. Flagged, not yet built.)*
+All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d).
 
 ### Critical frontend conventions — READ BEFORE TOUCHING API CALLS OR ROUTING
 
@@ -158,16 +160,30 @@ Same audit-then-fix pass applied to the other 3 role sections (Owner was done fi
 
 **This completes the full audit across all 4 role sections.** Every page in the app now uses real data correctly, matches the design system, and the sidebar-toggle bug can't silently reappear in a 5th place because there isn't one left unfixed.
 
+## 6d. Maintenance / Work Orders — first brand-new feature built from scratch
+
+Previously the #1 flagged gap across the whole project (mentioned repeatedly while building the Dashboard, Analytics, and Financial pages: "no maintenance-ticket feature exists"). Researched real property-management software (Buildium, AppFolio, TenantCloud, Anabode) before building — maintenance/work-order management is the single most universal feature across every one of them, so it was the clear highest-priority feature to add next. Full build, backend + all 4 role frontends:
+
+- **New model**: `MaintenanceRequest.model.js` (new migration, not a hand-edit — `create-maintenance-requests`). Fields: `buildingId`, `reportedById`, `assignedToId` (nullable), `unitNumber`, `title`, `description`, `category` (plumbing/electrical/hvac/appliance/structural/pest-control/other), `priority` (low/medium/high/urgent), `status` (open/in-progress/resolved/cancelled), `photoUrl` (Cloudinary), `resolutionNotes`, `resolvedAt`. Paranoid (soft-delete), scoped by `ownerId` like everything else.
+- **New feature folder**: `features/maintenance/` (controller, routes, validator) — mounted at `/api/v1/maintenance`.
+- **Visibility is role-scoped in the controller, same pattern as staff/tenants**: owner sees their whole portfolio; manager sees only their one building (`Building.managerId`); employee sees their building (resolved via their `UserProfile.buildingId`, same pattern `staff.controller.js` uses) *plus* anything assigned to them; tenant sees only requests they personally reported.
+- Who can do what: tenant + employee can **create** a request; owner + manager can **assign** it to a manager/employee; owner + manager + the assigned employee can **update status**; owner + manager can **delete**.
+- **Frontend**: one page per role (`owner/Maintenance.tsx`, `manager/Maintenance.tsx`, `employee/Maintenance.tsx`, `tenant/Maintenance.tsx`) since each role's capabilities genuinely differ (tenant only sees/creates their own; owner gets portfolio-wide filters; manager/employee get assign/status controls). Shared styling pulled into `lib/maintenanceStyles.ts` (category icons, priority/status badge colors) so a visual tweak only has to happen once across all 4.
+- Photo upload reuses the existing Cloudinary/multer pipeline (`multer.js` gained a new `maintenancePhotoUpload` single-file export).
+- **This also partially addresses the "audit-log" pending item below** — maintenance requests are now a second source of real, timestamped events (creation, assignment, status changes) that the Dashboard activity feed and Analytics could pull from instead of (or alongside) the synthesized buildings/staff/tenants timeline. Not yet wired in that direction — still pending, but now easier since the real data exists.
+
 ## 7. Known-pending / not yet built
 
 - The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — **now proven, not just suspected**, to cause repeat bugs (the sidebar-toggle fix had to be applied 4 separate times). Collapsing into one shared layout + a `useSidebarState()` hook should be a near-term priority, not just a nice-to-have.
 - `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component.
 - Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
 - Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet.
-- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps.
+- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — maintenance requests (6d) are a step in this direction but not yet wired into the Dashboard/Analytics feeds.
+- Dashboard/Analytics activity feeds could now incorporate real `MaintenanceRequest` events, not just buildings/staff/tenants creation timestamps — natural next polish item.
 - `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped) — worth tightening.
+- Other real-world features researched but not yet built, roughly in priority order: **announcements/communication** (broadcast to tenants/staff per building), **document storage** (lease PDFs, ID documents), **online rent payment** (Stripe — would also finally enable a real historical revenue trend chart, since it creates dated transaction records), **expense tracking** (Financial currently only tracks revenue, not the cost side), vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
 - No automated tests anywhere yet.
-- `.sequelizerc` / migrations set up but only one migration exists so far (`create-initial-schema`) — future schema changes need new migration files, not manual edits to models + hope.
+- `.sequelizerc` / migrations set up — now 2 migrations exist (`create-initial-schema`, `create-maintenance-requests`) — future schema changes need new migration files, not manual edits to models + hope.
 
 ## 8. How to resume in a new chat
 
