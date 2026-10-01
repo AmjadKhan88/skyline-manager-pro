@@ -1,123 +1,202 @@
-import { useEffect, useState } from 'react';
-import { Building, Users, Activity, ChevronRight } from 'lucide-react';
-import api from '../../lib/api';
-import toast from 'react-hot-toast';
+import { useEffect, useState } from "react";
+import {
+  Building2,
+  Users,
+  UsersRound,
+  MapPin,
+  ArrowUpRight,
+  RefreshCw,
+} from "lucide-react";
+import api from "../../lib/api";
+import { useGlobal } from "../../context/GlobalContext";
+import { timeAgo } from "../../lib/utils";
 
-interface DashboardData {
-  buildingsCount: number;
+interface ManagerDashboardData {
+  building: {
+    id: string;
+    name: string;
+    address: string;
+    status: string;
+    buildingType: string;
+  } | null;
   employeesCount: number;
   tenantsCount: number;
-  recentActivity: Array<{
+  recentActivity: {
     id: string;
-    description: string;
-    date: string;
-  }>;
+    unitNumber: string;
+    createdAt: string;
+    tenant: { id: string; name: string; email: string } | null;
+  }[];
 }
 
 export default function ManagerDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const { user } = useGlobal();
+  const [data, setData] = useState<ManagerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const fetchDashboard = async () => {
-    try {
-      const res = await api.get('/manager/dashboard');
-      setData(res.data.data); // { building, employeesCount, tenantsCount, recentActivity }
-    } catch (err) {
-      console.error('Failed to load manager dashboard', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchDashboard();
-}, []);
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await api.get("/manager/dashboard");
+        setData(res.data.data);
+      } catch (err) {
+        console.error("Failed to load manager dashboard", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
 
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Manager Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Overview of your assigned buildings and staff.</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1
+          style={{ fontFamily: "var(--font-display)" }}
+          className="text-2xl font-bold text-gray-900 dark:text-white"
+        >
+          {greeting}, {user?.name?.split(" ")[0] || "there"}
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Here's what's happening at your building
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Building className="w-24 h-24 text-blue-600" />
-          </div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
-              <Building className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Buildings</h3>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">{data?.buildingsCount || 0}</p>
+      {!data?.building ? (
+        <div className="text-center py-16 px-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+          <Building2 className="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+          <h3
+            style={{ fontFamily: "var(--font-display)" }}
+            className="text-lg font-bold text-gray-900 dark:text-white"
+          >
+            You're not assigned to a building yet
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Contact your property owner to get assigned to one.
+          </p>
         </div>
-
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Users className="w-24 h-24 text-indigo-600" />
-          </div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
-              <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Employees</h3>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">{data?.employeesCount || 0}</p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Activity className="w-24 h-24 text-emerald-600" />
-          </div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
-              <Activity className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Tenants</h3>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">{data?.tenantsCount || 0}</p>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-500" />
-            Recent Activity
-          </h2>
-          <button className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1">
-            View All <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-700 p-6">
-          {data?.recentActivity?.length ? (
-            data.recentActivity.map((activity, i) => (
-              <div key={i} className="py-4 first:pt-0 last:pb-0 flex items-start gap-4">
-                <div className="w-2 h-2 mt-2 rounded-full bg-blue-500"></div>
-                <div>
-                  <p className="text-slate-800 dark:text-slate-200">{activity.description}</p>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
-                    {new Date(activity.date).toLocaleDateString()}
-                  </span>
-                </div>
+      ) : (
+        <>
+          {/* My Building card */}
+          <a
+            href="/manager/building"
+            className="group flex items-center justify-between p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-            ))
-          ) : (
-            <p className="text-slate-500 dark:text-slate-400 text-center py-4">No recent activity.</p>
-          )}
-        </div>
-      </div>
+              <div>
+                <p
+                  style={{ fontFamily: "var(--font-display)" }}
+                  className="font-bold text-gray-900 dark:text-white"
+                >
+                  {data.building.name}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> {data.building.address}
+                </p>
+              </div>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-gray-300 dark:text-gray-700 group-hover:text-gray-400 transition-colors" />
+          </a>
+
+          {/* KPI row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a
+              href="/manager/employees"
+              className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center mb-3">
+                <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <p
+                style={{ fontFamily: "var(--font-display)" }}
+                className="text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                {data.employeesCount}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Employees
+              </p>
+            </a>
+            <a
+              href="/manager/tenants"
+              className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mb-3">
+                <UsersRound className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <p
+                style={{ fontFamily: "var(--font-display)" }}
+                className="text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                {data.tenantsCount}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Tenants
+              </p>
+            </a>
+          </div>
+
+          {/* Recent activity — real recent tenancies, not generic log entries */}
+          <div className="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+            <h3
+              style={{ fontFamily: "var(--font-display)" }}
+              className="font-bold text-gray-900 dark:text-white mb-4"
+            >
+              Recent Tenants
+            </h3>
+            {!data.recentActivity || data.recentActivity.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">
+                No tenant activity yet
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {data.recentActivity.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center gap-3 p-2.5 -mx-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+                  >
+                    <div
+                      style={{ fontFamily: "var(--font-display)" }}
+                      className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold flex-shrink-0"
+                    >
+                      {(t.tenant?.name || "T").slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {t.tenant?.name || "Unknown tenant"}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Unit {t.unitNumber}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0">
+                      {timeAgo(t.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

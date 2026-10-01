@@ -27,7 +27,7 @@ import {
 } from "recharts";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
-import { FinancialData } from "../../types";
+import { FinancialData } from "../../types/index";
 import { cn, getErrorMessage } from "../../lib/utils";
 
 function SummaryCard({

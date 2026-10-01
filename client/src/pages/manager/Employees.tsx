@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Users, Mail, Briefcase } from 'lucide-react';
-import api from '../../lib/api';
+import { useEffect, useState } from "react";
+import { Users, Mail, Briefcase } from "lucide-react";
+import api from "../../lib/api";
 
 export default function ManagerEmployees() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -9,10 +9,10 @@ export default function ManagerEmployees() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await api.get('/staff?role=employee&limit=100');
+        const res = await api.get("/staff?role=employee&limit=100");
         setEmployees(res.data.data || []);
       } catch (err) {
-        console.error('Failed to load employees', err);
+        console.error("Failed to load employees", err);
       } finally {
         setLoading(false);
       }
@@ -23,10 +23,17 @@ export default function ManagerEmployees() {
   if (loading) return <div className="p-6">Loading...</div>;
 
   return (
-    <div className="p-6 space-y-6 dark:text-gray-100">
+    <div className="space-y-6 dark:text-gray-100">
       <div>
-        <h1 className="text-2xl font-bold">Employees</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Employees in your building</p>
+        <h1
+          style={{ fontFamily: "var(--font-display)" }}
+          className="text-2xl font-bold"
+        >
+          Employees
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Employees in your building
+        </p>
       </div>
 
       {employees.length === 0 ? (
@@ -37,7 +44,10 @@ export default function ManagerEmployees() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {employees.map((emp) => (
-            <div key={emp.id} className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div
+              key={emp.id}
+              className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
+            >
               <h3 className="font-semibold">{emp.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
                 <Mail size={14} /> {emp.email}
@@ -47,10 +57,13 @@ export default function ManagerEmployees() {
                   <Briefcase size={14} /> {emp.profile.jobTitle}
                 </p>
               )}
-              <span className={`inline-block mt-3 px-2 py-1 rounded-full text-xs font-medium ${
-                emp.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-              }`}>
+              <span
+                className={`inline-block mt-3 px-2 py-1 rounded-full text-xs font-medium ${
+                  emp.status === "active"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                }`}
+              >
                 {emp.status}
               </span>
             </div>
