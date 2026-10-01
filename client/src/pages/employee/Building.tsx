@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Building2, MapPin } from 'lucide-react';
-import api from '../../lib/api';
+import { useEffect, useState } from "react";
+import { Building2, MapPin } from "lucide-react";
+import api from "../../lib/api";
 
 export default function EmployeeBuilding() {
   const [building, setBuilding] = useState<any>(null);
@@ -9,10 +9,10 @@ export default function EmployeeBuilding() {
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await api.get('/auth/me');
+        const res = await api.get("/auth/me");
         setBuilding(res.data.data.user.profile?.building || null);
       } catch (err) {
-        console.error('Failed to load building', err);
+        console.error("Failed to load building", err);
       } finally {
         setLoading(false);
       }
@@ -32,8 +32,13 @@ export default function EmployeeBuilding() {
   }
 
   return (
-    <div className="p-6 space-y-4 dark:text-gray-100">
-      <h1 className="text-2xl font-bold">{building.name}</h1>
+    <div className="space-y-4 dark:text-gray-100">
+      <h1
+        style={{ fontFamily: "var(--font-display)" }}
+        className="text-2xl font-bold"
+      >
+        {building.name}
+      </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
         <MapPin size={14} /> {building.address}
       </p>
