@@ -29,6 +29,19 @@ export interface MaintenanceRequest {
   assignedTo?: { id: string; name: string; email: string; role: string } | null;
 }
 
+export type AnnouncementPriority = 'info' | 'warning' | 'urgent';
+
+export interface Announcement {
+  id: string;
+  buildingId: string | null;
+  title: string;
+  body: string;
+  priority: AnnouncementPriority;
+  createdAt: string;
+  building?: { id: string; name: string } | null;
+  author?: { id: string; name: string; role: string };
+}
+
 export interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
