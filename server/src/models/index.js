@@ -23,6 +23,7 @@ import UserProfile from "./UserProfile.model.js";
 import Building from "./Building.model.js";
 import Tenancy from "./Tenancy.model.js";
 import Invitation from "./Invitation.model.js";
+import Announcement from "./Announcement.model.js";
 
 // Run all associations (MUST be after all model imports)
 import "./associations.js";
@@ -36,4 +37,5 @@ export {
   Tenancy,
   Invitation,
   MaintenanceRequest,
+  Announcement,
 };

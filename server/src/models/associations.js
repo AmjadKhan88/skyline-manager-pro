@@ -33,6 +33,7 @@ import UserProfile from "./UserProfile.model.js";
 import Building from "./Building.model.js";
 import Tenancy from "./Tenancy.model.js";
 import Invitation from "./Invitation.model.js";
+import Announcement from "./Announcement.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
@@ -64,6 +65,19 @@ MaintenanceRequest.belongsTo(Building, {
   foreignKey: "buildingId",
   as: "building",
 });
+
+// Announcements
+Building.hasMany(Announcement, {
+  foreignKey: "buildingId",
+  as: "announcements",
+});
+Announcement.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
+
+User.hasMany(Announcement, {
+  foreignKey: "authorId",
+  as: "postedAnnouncements",
+});
+Announcement.belongsTo(User, { foreignKey: "authorId", as: "author" });
 
 User.hasMany(MaintenanceRequest, {
   foreignKey: "reportedById",
