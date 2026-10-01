@@ -16,6 +16,7 @@
  */
 
 // Import all models (registers them with sequelize instance)
+import MaintenanceRequest from "./MaintenanceRequest.model.js";
 import User from "./User.model.js";
 import OwnerProfile from "./OwnerProfile.model.js";
 import UserProfile from "./UserProfile.model.js";
@@ -34,4 +35,5 @@ export {
   Building,
   Tenancy,
   Invitation,
+  MaintenanceRequest,
 };

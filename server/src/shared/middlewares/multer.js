@@ -18,6 +18,8 @@ const upload = multer({
   },
 });
 
+export const maintenancePhotoUpload = upload.single("photo");
+
 export const imagesUpload = upload.fields([
   { name: "avatar", maxCount: 1 },
   { name: "cnic", maxCount: 1 },

@@ -26,7 +26,7 @@
  *               ├─ belongsTo → Building               via buildingId
  *               └─ belongsTo → User (owner)           via ownerId
  */
-
+import MaintenanceRequest from "./MaintenanceRequest.model.js";
 import User from "./User.model.js";
 import OwnerProfile from "./OwnerProfile.model.js";
 import UserProfile from "./UserProfile.model.js";
@@ -35,11 +35,19 @@ import Tenancy from "./Tenancy.model.js";
 import Invitation from "./Invitation.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
-User.hasOne(OwnerProfile, { foreignKey: "userId", as: "ownerProfile", onDelete: "CASCADE" });
+User.hasOne(OwnerProfile, {
+  foreignKey: "userId",
+  as: "ownerProfile",
+  onDelete: "CASCADE",
+});
 OwnerProfile.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 // ─── 2. Staff Profile (1:1) ────────────────────────────────────────────────
-User.hasOne(UserProfile, { foreignKey: "userId", as: "profile", onDelete: "CASCADE" });
+User.hasOne(UserProfile, {
+  foreignKey: "userId",
+  as: "profile",
+  onDelete: "CASCADE",
+});
 UserProfile.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 // ─── 3. Owner → Staff Hierarchy (1:many self-referencing) ─────────────────
@@ -47,8 +55,40 @@ UserProfile.belongsTo(User, { foreignKey: "userId", as: "user" });
 User.hasMany(User, { foreignKey: "ownerId", as: "staff", onDelete: "CASCADE" });
 User.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
 
+// Maintenance Requests
+Building.hasMany(MaintenanceRequest, {
+  foreignKey: "buildingId",
+  as: "maintenanceRequests",
+});
+MaintenanceRequest.belongsTo(Building, {
+  foreignKey: "buildingId",
+  as: "building",
+});
+
+User.hasMany(MaintenanceRequest, {
+  foreignKey: "reportedById",
+  as: "reportedRequests",
+});
+MaintenanceRequest.belongsTo(User, {
+  foreignKey: "reportedById",
+  as: "reportedBy",
+});
+
+User.hasMany(MaintenanceRequest, {
+  foreignKey: "assignedToId",
+  as: "assignedRequests",
+});
+MaintenanceRequest.belongsTo(User, {
+  foreignKey: "assignedToId",
+  as: "assignedTo",
+});
+
 // ─── 4. Owner → Buildings (1:many) ────────────────────────────────────────
-User.hasMany(Building, { foreignKey: "ownerId", as: "buildings", onDelete: "CASCADE" });
+User.hasMany(Building, {
+  foreignKey: "ownerId",
+  as: "buildings",
+  onDelete: "CASCADE",
+});
 Building.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
 
 // ─── 5. Manager → Building (1:many, optional assignment) ──────────────────
@@ -58,24 +98,44 @@ Building.belongsTo(User, { foreignKey: "managerId", as: "manager" });
 
 // ─── 6. Building → Staff Profiles (1:many via buildingId in UserProfile) ──
 // All staff profiles assigned to a specific building
-Building.hasMany(UserProfile, { foreignKey: "buildingId", as: "staffProfiles", onDelete: "SET NULL" });
+Building.hasMany(UserProfile, {
+  foreignKey: "buildingId",
+  as: "staffProfiles",
+  onDelete: "SET NULL",
+});
 UserProfile.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
 
 // ─── 7. Tenancies (many-sided relationships) ───────────────────────────────
 // Tenant user → their leases
-User.hasMany(Tenancy, { foreignKey: "tenantId", as: "tenancies", onDelete: "CASCADE" });
+User.hasMany(Tenancy, {
+  foreignKey: "tenantId",
+  as: "tenancies",
+  onDelete: "CASCADE",
+});
 Tenancy.belongsTo(User, { foreignKey: "tenantId", as: "tenant" });
 
 // Building → tenants in it
-Building.hasMany(Tenancy, { foreignKey: "buildingId", as: "tenancies", onDelete: "CASCADE" });
+Building.hasMany(Tenancy, {
+  foreignKey: "buildingId",
+  as: "tenancies",
+  onDelete: "CASCADE",
+});
 Tenancy.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
 
 // Owner → all tenancies across all their buildings
-User.hasMany(Tenancy, { foreignKey: "ownerId", as: "managedTenancies", onDelete: "CASCADE" });
+User.hasMany(Tenancy, {
+  foreignKey: "ownerId",
+  as: "managedTenancies",
+  onDelete: "CASCADE",
+});
 Tenancy.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
 
 // ─── 8. Invitations ────────────────────────────────────────────────────────
-User.hasMany(Invitation, { foreignKey: "ownerId", as: "sentInvitations", onDelete: "CASCADE" });
+User.hasMany(Invitation, {
+  foreignKey: "ownerId",
+  as: "sentInvitations",
+  onDelete: "CASCADE",
+});
 Invitation.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
 User.hasMany(Invitation, { foreignKey: "userId", as: "receivedInvitations" });
 Invitation.belongsTo(User, { foreignKey: "userId", as: "invitedUser" });
