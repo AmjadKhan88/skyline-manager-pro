@@ -98,7 +98,7 @@ export default function ManagerDashboard() {
             className="group flex items-center justify-between p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
                 <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
@@ -175,7 +175,7 @@ export default function ManagerDashboard() {
                   >
                     <div
                       style={{ fontFamily: "var(--font-display)" }}
-                      className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold flex-shrink-0"
+                      className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold shrink-0"
                     >
                       {(t.tenant?.name || "T").slice(0, 2).toUpperCase()}
                     </div>
@@ -187,7 +187,7 @@ export default function ManagerDashboard() {
                         Unit {t.unitNumber}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span className="text-xs text-gray-400 shrink-0">
                       {timeAgo(t.createdAt)}
                     </span>
                   </div>
