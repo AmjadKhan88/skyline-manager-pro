@@ -150,6 +150,37 @@ export interface Tenancy {
   tenant?: Pick<User, "id" | "name" | "email">;
 }
 
+export interface AnalyticsData {
+  buildingsByType: { type: string; count: number }[];
+  buildingsByStatus: { status: string; count: number }[];
+  buildings: {
+    id: string;
+    name: string;
+    units: number;
+    occupied: number;
+    vacant: number;
+    occupancyRate: number;
+    hasManager: boolean;
+    employees: number;
+  }[];
+}
+
+export interface FinancialData {
+  revenueByBuilding: { id: string; name: string; expected: number; collected: number; outstanding: number }[];
+  outstanding: {
+    tenancyId: string;
+    tenantId: string;
+    tenantName: string;
+    tenantEmail: string;
+    buildingName: string;
+    unitNumber: string;
+    monthlyRent: number;
+    paymentStatus: 'unpaid' | 'overdue' | 'partial';
+    leaseStart: string;
+  }[];
+  totals: { expected: number; collected: number; outstanding: number };
+}
+
 // ─── Dashboard Stats Types ────────────────────────────────────────────────────
 
 export interface DashboardStats {

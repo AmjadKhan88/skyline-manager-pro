@@ -135,9 +135,19 @@ User supplied a reference HTML dashboard (dark sidebar, icon-chip KPI cards, don
 
 **New pattern to watch for:** `Managers.tsx`/`Employees.tsx` are now near-identical in structure (same bugs, same fixes) — good candidate to consolidate into one shared `StaffTable` component parameterized by role, so a future bug gets fixed once instead of twice. Not done yet — pending, see below.
 
+## 6b. Analytics & Financial — completed (Step 11)
+
+Both pages previously static placeholders; now real, backed by two new endpoints. No fabricated history anywhere — current-state composition only, since there's no payments-ledger or snapshot table for genuine trends yet.
+
+- **`GET /api/v1/owner/analytics`** (`getAnalytics` in `owner.controller.js`) — buildings grouped by type/status, and a per-building breakdown (units, occupied, occupancyRate, hasManager, employee count). Per-building stats are N queries (one per building) rather than a single aggregate query — fine at the scale of buildings-per-owner, revisit if that assumption ever changes.
+- **`GET /api/v1/owner/financial`** (`getFinancial`) — revenue per building (expected/collected/outstanding) plus a sorted (overdue → partial → unpaid) outstanding-balances list across all tenants. `Financial.tsx` includes a working **"Mark Paid" button** that reuses the exact same `PATCH /tenants/:id/payment` endpoint `Tenants.tsx` already uses — same action, surfaced in a second place.
+- Frontend: `AnalyticsData` and `FinancialData` added to `types/index.ts`.
+- `Analytics.tsx` renders a stacked horizontal bar (occupied/vacant) per building and a staff-coverage table; `Financial.tsx` renders a grouped horizontal bar (expected/collected) and the outstanding-balances table.
+
+**This completes the full Owner section** — Dashboard + Buildings + Managers + Employees + Tenants + Settings + Analytics + Financial are all real, wired to the backend, and bug-audited. Next up per the original plan: Manager dashboard, then Employee, then Tenant.
+
 ## 7. Known-pending / not yet built
 
-- `pages/owner/Analytics.tsx` and `Financial.tsx` — static placeholders still, now being built with real derived data (portfolio composition, per-building revenue breakdown) rather than fake time-series, since there's no payments-ledger or maintenance-ticket table for real historical trends.
 - The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — worth collapsing into one shared layout + a `useSidebarState()` hook.
 - `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component.
 - Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.

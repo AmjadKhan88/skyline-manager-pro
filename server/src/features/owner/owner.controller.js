@@ -13,7 +13,7 @@ import {
 } from "../../models/index.js";
 import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/utils/ApiResponse.js";
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 
 // ─── GET DASHBOARD STATS ───────────────────────────────────────────────────────
 export const getDashboard = asyncHandler(async (req, res) => {
@@ -160,6 +160,79 @@ export const getDashboard = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── GET ANALYTICS (portfolio composition — no fabricated history) ────────────
+export const getAnalytics = asyncHandler(async (req, res) => {
+  const ownerId = req.scopedOwnerId;
+
+  const [typeRows, statusRows, buildings] = await Promise.all([
+    Building.findAll({
+      where: { ownerId },
+      attributes: ["buildingType", [fn("COUNT", col("id")), "count"]],
+      group: ["buildingType"],
+      raw: true,
+    }),
+    Building.findAll({
+      where: { ownerId },
+      attributes: ["status", [fn("COUNT", col("id")), "count"]],
+      group: ["status"],
+      raw: true,
+    }),
+    Building.findAll({
+      where: { ownerId },
+      attributes: ["id", "name", "units", "managerId"],
+      order: [["name", "ASC"]],
+    }),
+  ]);
+
+  const buildingsByType = typeRows.map((r) => ({
+    type: r.buildingType,
+    count: parseInt(r.count),
+  }));
+  const buildingsByStatus = statusRows.map((r) => ({
+    status: r.status,
+    count: parseInt(r.count),
+  }));
+
+  // Per-building breakdown — small N per owner, so a query per building is fine here
+  const buildingBreakdown = await Promise.all(
+    buildings.map(async (b) => {
+      const [occupied, employeeCount] = await Promise.all([
+        Tenancy.count({
+          where: { buildingId: b.id, ownerId, status: "active" },
+        }),
+        User.count({
+          where: { ownerId, role: "employee" },
+          include: [
+            {
+              model: UserProfile,
+              as: "profile",
+              where: { buildingId: b.id },
+              required: true,
+            },
+          ],
+        }),
+      ]);
+      const units = b.units || 0;
+      return {
+        id: b.id,
+        name: b.name,
+        units,
+        occupied,
+        vacant: Math.max(units - occupied, 0),
+        occupancyRate: units ? Math.round((occupied / units) * 100) : 0,
+        hasManager: !!b.managerId,
+        employees: employeeCount,
+      };
+    }),
+  );
+
+  return ApiResponse.success(res, 200, "Analytics fetched.", {
+    buildingsByType,
+    buildingsByStatus,
+    buildings: buildingBreakdown,
+  });
+});
+
 // ─── GET OWNER PROFILE ────────────────────────────────────────────────────────
 export const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findByPk(req.user.id, {
@@ -190,5 +263,88 @@ export const updateProfile = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, 200, "Profile updated successfully.", {
     user,
     profile,
+  });
+});
+
+// ─── GET FINANCIAL (current-state revenue + outstanding balances) ─────────────
+export const getFinancial = asyncHandler(async (req, res) => {
+  const ownerId = req.scopedOwnerId;
+
+  const buildings = await Building.findAll({
+    where: { ownerId },
+    attributes: ["id", "name"],
+    order: [["name", "ASC"]],
+  });
+
+  const revenueByBuilding = await Promise.all(
+    buildings.map(async (b) => {
+      const [expected, collected] = await Promise.all([
+        Tenancy.sum("monthlyRent", {
+          where: { buildingId: b.id, ownerId, status: "active" },
+        }),
+        Tenancy.sum("monthlyRent", {
+          where: {
+            buildingId: b.id,
+            ownerId,
+            status: "active",
+            paymentStatus: "paid",
+          },
+        }),
+      ]);
+      return {
+        id: b.id,
+        name: b.name,
+        expected: expected || 0,
+        collected: collected || 0,
+        outstanding: (expected || 0) - (collected || 0),
+      };
+    }),
+  );
+
+  const outstandingTenancies = await Tenancy.findAll({
+    where: {
+      ownerId,
+      status: "active",
+      paymentStatus: { [Op.in]: ["unpaid", "overdue", "partial"] },
+    },
+    include: [
+      { model: User, as: "tenant", attributes: ["id", "name", "email"] },
+      { model: Building, as: "building", attributes: ["id", "name"] },
+    ],
+  });
+
+  // Overdue first, then partial, then unpaid — sorted in JS to avoid a raw-SQL CASE expression
+  const statusPriority = { overdue: 0, partial: 1, unpaid: 2 };
+  const outstanding = outstandingTenancies
+    .sort(
+      (a, b) =>
+        (statusPriority[a.paymentStatus] ?? 9) -
+        (statusPriority[b.paymentStatus] ?? 9),
+    )
+    .map((t) => ({
+      tenancyId: t.id,
+      tenantId: t.tenantId,
+      tenantName: t.tenant?.name,
+      tenantEmail: t.tenant?.email,
+      buildingName: t.building?.name,
+      unitNumber: t.unitNumber,
+      monthlyRent: t.monthlyRent,
+      paymentStatus: t.paymentStatus,
+      leaseStart: t.leaseStart,
+    }));
+
+  const totals = revenueByBuilding.reduce(
+    (acc, b) => ({
+      expected: acc.expected + b.expected,
+      collected: acc.collected + b.collected,
+      outstanding: acc.outstanding + b.outstanding,
+    }),
+    { expected: 0, collected: 0, outstanding: 0 },
+  );
+
+  return ApiResponse.success(res, 200, "Financial data fetched.", {
+    revenueByBuilding,
+    outstanding,
+    totals,
   });
 });
