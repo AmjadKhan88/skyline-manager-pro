@@ -6,6 +6,29 @@
  */
 
 // ─── Core User Types ──────────────────────────────────────────────────────────
+
+export type MaintenanceCategory = 'plumbing' | 'electrical' | 'hvac' | 'appliance' | 'structural' | 'pest-control' | 'other';
+export type MaintenancePriority = 'low' | 'medium' | 'high' | 'urgent';
+export type MaintenanceStatus = 'open' | 'in-progress' | 'resolved' | 'cancelled';
+
+export interface MaintenanceRequest {
+  id: string;
+  buildingId: string;
+  unitNumber?: string;
+  title: string;
+  description?: string;
+  category: MaintenanceCategory;
+  priority: MaintenancePriority;
+  status: MaintenanceStatus;
+  photoUrl?: string;
+  resolutionNotes?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  building?: { id: string; name: string; address: string };
+  reportedBy?: { id: string; name: string; email: string; role: string };
+  assignedTo?: { id: string; name: string; email: string; role: string } | null;
+}
+
 export interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;

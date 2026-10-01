@@ -43,7 +43,10 @@ import "./src/models/index.js";
 
 // Middleware
 import errorHandler from "./src/shared/middlewares/errorHandler.js";
-import { apiLimiter, authLimiter } from "./src/shared/middlewares/rateLimiter.js";
+import {
+  apiLimiter,
+  authLimiter,
+} from "./src/shared/middlewares/rateLimiter.js";
 
 // Versioned API Router (mounted at /api/v1 below — folder itself is flat, version lives in the mount path)
 import v1Router from "./src/routes/index.js";
@@ -64,11 +67,13 @@ app.use(
       },
     },
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
+  }),
 );
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173").split(",");
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS || "http://localhost:3000"
+).split(",");
 
 app.use(
   cors({
@@ -79,7 +84,7 @@ app.use(
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true, // Required for httpOnly cookie auth
-  })
+  }),
 );
 
 // ─── Request Parsing ──────────────────────────────────────────────────────────
@@ -145,7 +150,9 @@ app.use(errorHandler);
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 SkyLine Manager Pro API running on port ${PORT} [${NODE_ENV}]`);
+  console.log(
+    `🚀 SkyLine Manager Pro API running on port ${PORT} [${NODE_ENV}]`,
+  );
   console.log(`📡 API Base: http://localhost:${PORT}/api/v1`);
 });
 

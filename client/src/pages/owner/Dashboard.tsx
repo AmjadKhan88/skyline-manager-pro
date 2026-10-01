@@ -37,7 +37,7 @@ import {
 } from "recharts";
 
 import api from "../../lib/api";
-import { DashboardData } from "../../types";
+import { DashboardData } from "../../types/index";
 import { cn, timeAgo } from "../../lib/utils";
 import { useGlobal } from "../../context/GlobalContext";
 import toast from "react-hot-toast";
@@ -500,7 +500,7 @@ export default function Dashboard() {
                               <div className="flex items-center gap-2.5">
                                 <div
                                   style={{ fontFamily: "var(--font-display)" }}
-                                  className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold flex-shrink-0"
+                                  className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold shrink-0"
                                 >
                                   {t.name.slice(0, 2).toUpperCase()}
                                 </div>
@@ -603,7 +603,7 @@ export default function Dashboard() {
                           )}
                           <div
                             className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10",
+                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10",
                               `bg-${e.color}-50 dark:bg-${e.color}-500/10`,
                             )}
                           >
@@ -705,7 +705,7 @@ function StatusPill({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0",
+        "text-xs px-2 py-0.5 rounded-full font-medium shrink-0",
         isGood
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
           : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
@@ -727,7 +727,7 @@ function RolePill({ role }: { role: string }) {
   return (
     <span
       className={cn(
-        "text-xs px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0",
+        "text-xs px-2 py-0.5 rounded-full font-medium capitalize shrink-0",
         styles[role] || styles.tenant,
       )}
     >
