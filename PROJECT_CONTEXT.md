@@ -146,9 +146,21 @@ Both pages previously static placeholders; now real, backed by two new endpoints
 
 **This completes the full Owner section** — Dashboard + Buildings + Managers + Employees + Tenants + Settings + Analytics + Financial are all real, wired to the backend, and bug-audited. Next up per the original plan: Manager dashboard, then Employee, then Tenant.
 
+## 6c. Manager / Employee / Tenant dashboards — audited and fixed
+
+Same audit-then-fix pass applied to the other 3 role sections (Owner was done first, see section 6/6b).
+
+**Confirmed, exactly as suspected:** `ManagerLayout.tsx`, `EmployeeLayout.tsx`, and `TenantLayout.tsx` **all independently had the stale sidebar-toggle bug** (the combined-toggle-state bug fixed in `OwnerLayout.tsx` much earlier never got copied to the other 3). This is now very strong evidence for finally consolidating the 4 layout files — see pending list, this is no longer theoretical, it's a bug that's now been fixed 4 separate times.
+
+- **Manager**: `Dashboard.tsx` read `data.buildingsCount` (doesn't exist — real field is `data.building`, singular since a manager has exactly one) and `recentActivity[].description`/`.date` (doesn't exist — real items are `Tenancy` records with `.tenant.name`/`.unitNumber`/`.createdAt`). Rebuilt to match the real shape, with a distinct empty state for "not assigned to a building yet" vs. an assigned building with zero activity. `Building.tsx`/`Employees.tsx`/`Tenants.tsx` were already functionally correct (right paths, right `.profile`/`.tenancies` nesting) — only needed the double-padding fix (pages were wrapping themselves in `p-6` on top of the layout's own `p-6 lg:p-8`) and a Manrope font pass.
+- **Employee**: `Dashboard.tsx` read `user.assignedBuilding` — doesn't exist; real path is `user.profile.building` (and `Building.tsx`, its sibling page, already correctly used that exact path — the bug was isolated to Dashboard). Fixed, and also surfaced `profile.jobTitle` which was available but unused.
+- **Tenant**: `Dashboard.tsx` had the worst bug of the three — `statusConfig` only defined 3 payment statuses (`paid`/`unpaid`/`overdue`) but the real enum has 4 (`+ partial`), so **any tenant with a `partial` payment status would crash the page outright** (`Cannot read properties of undefined` on `statusConfig[status].icon`). Also read `lease.buildingName`/`.startDate`/`.endDate` which don't exist (real: `lease.building.name`/`.leaseStart`/`.leaseEnd`) — every date rendered as "Invalid Date" and the building name never showed. Fixed all three, and gave the previously-silent "Make a Payment" no-op button a toast explaining online payments aren't built yet, rather than it looking broken. `Lease.tsx` was already correct, only needed the padding/font pass.
+
+**This completes the full audit across all 4 role sections.** Every page in the app now uses real data correctly, matches the design system, and the sidebar-toggle bug can't silently reappear in a 5th place because there isn't one left unfixed.
+
 ## 7. Known-pending / not yet built
 
-- The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — worth collapsing into one shared layout + a `useSidebarState()` hook.
+- The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — **now proven, not just suspected**, to cause repeat bugs (the sidebar-toggle fix had to be applied 4 separate times). Collapsing into one shared layout + a `useSidebarState()` hook should be a near-term priority, not just a nice-to-have.
 - `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component.
 - Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
 - Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet.
