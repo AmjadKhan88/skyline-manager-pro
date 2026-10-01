@@ -115,15 +115,39 @@ client/src/
 7. **Sidebar state**: `sidebarOpen` (desktop collapse) and `mobileSidebarOpen` (mobile drawer) are separate concerns for separate screen sizes — never toggle both from one handler. Use `window.innerWidth >= 1024` to decide which one a menu-button click should affect.
 8. Files have reverted to earlier broken states multiple times across re-uploaded zips (RoleModal, App.tsx, dead `components/owner/` tree, `configs/` folder, `types.ts` duplicate, `react-jsx-runtime.d.ts` hack). **If something that was already fixed appears broken again, check whether an old file/zip got re-merged in before assuming it's a new bug.**
 
-## 6. Known-pending / not yet built
+## 6. Owner dashboard redesign (session 2) — reference-driven rebuild, step by step
 
-- `pages/owner/Analytics.tsx` and `Financial.tsx` — static placeholders, no backend endpoint yet.
-- The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — worth collapsing into one shared layout + a `useSidebarState()` hook to stop bugs from having to be fixed 4 times.
+User supplied a reference HTML dashboard (dark sidebar, icon-chip KPI cards, donut/bar charts, activity timeline) and we rebuilt the Owner section to match it, step by step, fixing real bugs along the way rather than just reskinning. Steps 1-10 are done:
+
+1. **Sidebar** (`AppSidebar.tsx`) — permanently dark (`bg-slate-900`, doesn't flip with light/dark mode — intentional, a stable brand anchor like Linear/Vercel), nav grouped into labeled sections (Main/Insights/System), owner-only "Upgrade Plan" card (currently static copy, not yet wired to real plan data).
+2. **Header** (`AppHeader.tsx`) — added time-based greeting (dashboard routes only), a visual-only search bar (no backend search endpoint exists — don't wire it to anything until one does), full avatar+name+role block.
+3. **KPI cards** — real counts from `/owner/dashboard`, status badges computed from real data (e.g. "2 inactive", "3 overdue") rather than fabricated trend percentages like the reference's fake `+12%`.
+4. **Charts** — reference wanted a revenue history + 3-way occupancy donut (incl. "Under Maintenance"); we don't have a payments ledger (dated transactions) or a maintenance-ticket feature, so building fake history would mean fabricating numbers. Built instead: a **Revenue Breakdown** bar chart (Expected/Collected/Overdue — a real current-month snapshot from `Tenancy.monthlyRent` + `paymentStatus`) and a 2-segment **Occupancy** donut (Occupied/Vacant from real `Building.units` + active `Tenancy` count). Backend: `getDashboard` now also returns `revenue` and `occupancy` objects.
+5. **Tables/Activity** — reference wanted a maintenance-ticket table and an audit-log timeline; neither feature exists. Built instead: a **Recent Tenants** table (real data, not previously surfaced on the dashboard) and an **activity timeline synthesized** by merging the existing recentBuildings/recentStaff/recentTenants queries sorted by `createdAt` — real events, just not from a dedicated audit-log table (a proper one is a good future feature, see pending list).
+
+**Then did a full audit pass on the other 5 owner pages** (Buildings, Managers, Employees, Tenants, Settings) — these had never been touched since the original client.zip re-upload, and had accumulated serious, previously-undiscovered bugs:
+
+- **`Managers.tsx`, `Employees.tsx`, `Tenants.tsx`, `Settings.tsx` all had the broken `import { api } from '../../lib/api'` named-import bug** (real export is `default`) — meaning **all 4 of these pages were completely non-functional**, not just buggy, until this pass. This is the single most-recurring bug in the whole project — check this import first on any page that "does nothing."
+- **Managers/Employees**: read `manager.phone`/`.salary`/`.jobTitle`/`.buildingId` as flat fields, but the real API nests them under `manager.profile.*` (`UserProfile` association) — edit forms always showed blank, table always showed missing data.
+- **Tenants**: same class of bug but worse — code read `tenant.leases`, but the real association is named `tenant.tenancies`. Payment status toggle was silently sending `tenancyId: undefined` and always failing. Also found and fixed a genuine **backend gap**: `updateTenant` only ever accepted `name/email/status/phone` — editing rent/unit/lease-dates silently did nothing. Extended the controller to also update the tenant's active `Tenancy` record when lease fields are submitted.
+- **Settings**: `getProfile`'s response is `{ data: { user } }` but the page read `res.data.data` as if it were the user directly — always blank. Also used completely wrong field names (`companyName`/`address` vs the real `businessName`/`businessAddress`/`taxId` on `OwnerProfile`) — saving silently updated nothing meaningful even once loading was fixed. Added a real subscription-plan display and a link to the existing (previously unreachable from any nav) `/change-password` page.
+- **Buildings.tsx** was the one page that was already solid — added the missing manager-assignment dropdown (backend supported it, UI never exposed it) and a font-consistency pass, nothing structurally wrong.
+
+**New pattern to watch for:** `Managers.tsx`/`Employees.tsx` are now near-identical in structure (same bugs, same fixes) — good candidate to consolidate into one shared `StaffTable` component parameterized by role, so a future bug gets fixed once instead of twice. Not done yet — pending, see below.
+
+## 7. Known-pending / not yet built
+
+- `pages/owner/Analytics.tsx` and `Financial.tsx` — static placeholders still, now being built with real derived data (portfolio composition, per-building revenue breakdown) rather than fake time-series, since there's no payments-ledger or maintenance-ticket table for real historical trends.
+- The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — worth collapsing into one shared layout + a `useSidebarState()` hook.
+- `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component.
+- Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
+- Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet.
+- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps.
 - `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped) — worth tightening.
 - No automated tests anywhere yet.
 - `.sequelizerc` / migrations set up but only one migration exists so far (`create-initial-schema`) — future schema changes need new migration files, not manual edits to models + hope.
 
-## 7. How to resume in a new chat
+## 8. How to resume in a new chat
 
 Tell Claude: *"Read PROJECT_CONTEXT.md in the project root, then let's continue."* Claude should read this whole file before touching any code, then proceed with whatever the next request is, keeping the conventions in section 5 in mind especially (they're the ones that have caused repeat bugs).
 
