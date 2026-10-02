@@ -14,6 +14,7 @@ import {
   Key,
   Sparkles,
   Wrench,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import api from "../../lib/api";
@@ -34,6 +35,7 @@ const NAV_CONFIG = {
         { label: "Employees", icon: Users, to: "/owner/employees" },
         { label: "Tenants", icon: UsersRound, to: "/owner/tenants" },
         { label: "Maintenance", icon: Wrench, to: "/owner/maintenance" },
+        { label: "Announcements", icon: Megaphone, to: "/owner/announcements" },
       ],
     },
     {
@@ -57,6 +59,11 @@ const NAV_CONFIG = {
         { label: "Employees", icon: Users, to: "/manager/employees" },
         { label: "Tenants", icon: UsersRound, to: "/manager/tenants" },
         { label: "Maintenance", icon: Wrench, to: "/manager/maintenance" },
+        {
+          label: "Announcements",
+          icon: Megaphone,
+          to: "/manager/announcements",
+        },
       ],
     },
   ],
@@ -71,6 +78,11 @@ const NAV_CONFIG = {
         },
         { label: "My Building", icon: Building2, to: "/employee/building" },
         { label: "Maintenance", icon: Wrench, to: "/employee/maintenance" },
+        {
+          label: "Announcements",
+          icon: Megaphone,
+          to: "/employee/announcements",
+        },
       ],
     },
   ],
@@ -81,6 +93,11 @@ const NAV_CONFIG = {
         { label: "Dashboard", icon: LayoutDashboard, to: "/tenant/dashboard" },
         { label: "My Lease", icon: Key, to: "/tenant/lease" },
         { label: "Maintenance", icon: Wrench, to: "/tenant/maintenance" },
+        {
+          label: "Announcements",
+          icon: Megaphone,
+          to: "/tenant/announcements",
+        },
       ],
     },
   ],

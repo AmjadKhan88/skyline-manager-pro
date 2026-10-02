@@ -47,7 +47,7 @@ server/
 │   ├── models/                    ← stays centralized (Sequelize needs this for associations)
 │   │   ├── User.model.js, OwnerProfile.model.js, UserProfile.model.js,
 │   │   │   Building.model.js, Tenancy.model.js, Invitation.model.js,
-│   │   │   MaintenanceRequest.model.js, associations.js, index.js
+│   │   │   MaintenanceRequest.model.js, Announcement.model.js, associations.js, index.js
 │   ├── shared/
 │   │   ├── middlewares/  (authenticate, authorize, tenantScope, validate, errorHandler, rateLimiter, multer)
 │   │   ├── utils/         (ApiResponse, asyncHandler)
@@ -59,7 +59,8 @@ server/
 │   │   ├── staff/       (controller, service, routes) — managers + employees
 │   │   ├── tenants/     (controller, routes)
 │   │   ├── manager/     (controller, routes) — manager's OWN scoped dashboard/building view
-│   │   └── maintenance/ (controller, routes, validator) — work orders, see section 6d
+│   │   ├── maintenance/ (controller, routes, validator) — work orders, see section 6d
+│   │   └── announcements/ (controller, routes, validator) — broadcast posts, see section 6e
 │   └── routes/index.js  (mounts all feature routers under /api/v1)
 └── server.js
 ```
@@ -97,14 +98,15 @@ client/src/
 ├── pages/
 │   ├── Home.tsx           ← public landing page + role-select buttons → opens RoleModal
 │   ├── auth/               (VerifyEmail.tsx, ChangePassword.tsx)
-│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance)
-│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance)
-│   ├── employee/           (Dashboard, Building, Maintenance)
-│   └── tenant/             (Dashboard, Lease, Maintenance)
+│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements)
+│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements)
+│   ├── employee/           (Dashboard, Building, Maintenance, Announcements)
+│   └── tenant/             (Dashboard, Lease, Maintenance, Announcements)
 ├── lib/maintenanceStyles.ts  ← shared category/priority/status badge config, used by all 4 Maintenance pages
+├── lib/announcementStyles.ts ← shared priority badge config, used by all 4 Announcements pages
 └── types/index.ts          ← THE canonical UserRole/User/Building/Tenancy/etc. types. Never redeclare UserRole locally anywhere else.
 ```
-All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d).
+All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d) and `Announcements` (see 6e).
 
 ### Critical frontend conventions — READ BEFORE TOUCHING API CALLS OR ROUTING
 
@@ -172,18 +174,28 @@ Previously the #1 flagged gap across the whole project (mentioned repeatedly whi
 - Photo upload reuses the existing Cloudinary/multer pipeline (`multer.js` gained a new `maintenancePhotoUpload` single-file export).
 - **This also partially addresses the "audit-log" pending item below** — maintenance requests are now a second source of real, timestamped events (creation, assignment, status changes) that the Dashboard activity feed and Analytics could pull from instead of (or alongside) the synthesized buildings/staff/tenants timeline. Not yet wired in that direction — still pending, but now easier since the real data exists.
 
+## 6e. Announcements — second brand-new feature, same scoping pattern reused
+
+Built right after Maintenance, from the same research pass (announcements/communication was the other Tier 1 feature identified as universal across property-management software). Went faster than Maintenance since the role-scoped-visibility pattern was now established and could be reused almost directly.
+
+- **New model**: `Announcement.model.js` (migration `create-announcements`). Fields: `buildingId` (nullable — `null` means portfolio-wide, visible across every building the owner has), `authorId`, `title`, `body`, `priority` (info/warning/urgent). Not paranoid (soft-delete wasn't judged necessary for this one — a deliberate, smaller-footprint choice vs. most other models).
+- **New feature folder**: `features/announcements/` — mounted at `/api/v1/announcements`.
+- **Visibility**: owner sees everything in their portfolio (optionally filtered by building); manager sees portfolio-wide posts (`buildingId: null`) plus their own building's; employee/tenant see portfolio-wide plus their building's (resolved the same way Maintenance does — employee via `UserProfile.buildingId`, tenant via their active `Tenancy.buildingId`).
+- **Posting rules**: owner can post to any specific building or portfolio-wide (`buildingId: null`); a manager can only ever post to their own building — **the server forces this and ignores whatever `buildingId` the client sends** for a manager request, rather than trusting it. Only the original author (or an owner, for anyone's post in their portfolio) can edit/delete.
+- **Frontend**: 4 pages again, but only 2 real variants — owner gets full CRUD + a building filter; manager gets create (building auto-forced) + edit/delete scoped to their own posts only (an `isMine` check in the UI, enforced for real server-side too); employee and tenant are plain read-only feeds (literally identical component logic, just copy-pasted with a different accent color — a candidate for the same kind of consolidation `Managers.tsx`/`Employees.tsx` already need). Shared priority badge styling in `lib/announcementStyles.ts`.
+
 ## 7. Known-pending / not yet built
 
 - The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — **now proven, not just suspected**, to cause repeat bugs (the sidebar-toggle fix had to be applied 4 separate times). Collapsing into one shared layout + a `useSidebarState()` hook should be a near-term priority, not just a nice-to-have.
-- `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component.
+- `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component. The employee/tenant `Announcements.tsx` pages are now in the same boat (identical logic, copy-pasted).
 - Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
 - Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet.
-- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — maintenance requests (6d) are a step in this direction but not yet wired into the Dashboard/Analytics feeds.
-- Dashboard/Analytics activity feeds could now incorporate real `MaintenanceRequest` events, not just buildings/staff/tenants creation timestamps — natural next polish item.
+- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — Maintenance (6d) and now Announcements (6e) are both real, timestamped event sources that could feed this instead.
+- Dashboard/Analytics activity feeds could now incorporate real `MaintenanceRequest`/`Announcement` events, not just buildings/staff/tenants creation timestamps — natural next polish item.
 - `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped) — worth tightening.
-- Other real-world features researched but not yet built, roughly in priority order: **announcements/communication** (broadcast to tenants/staff per building), **document storage** (lease PDFs, ID documents), **online rent payment** (Stripe — would also finally enable a real historical revenue trend chart, since it creates dated transaction records), **expense tracking** (Financial currently only tracks revenue, not the cost side), vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
+- Remaining researched features not yet built, roughly in priority order: **document storage** (lease PDFs, ID documents), **online rent payment** (Stripe — would also finally enable a real historical revenue trend chart, since it creates dated transaction records), **expense tracking** (Financial currently only tracks revenue, not the cost side), vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
 - No automated tests anywhere yet.
-- `.sequelizerc` / migrations set up — now 2 migrations exist (`create-initial-schema`, `create-maintenance-requests`) — future schema changes need new migration files, not manual edits to models + hope.
+- `.sequelizerc` / migrations set up — now 3 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`) — future schema changes need new migration files, not manual edits to models + hope.
 
 ## 8. How to resume in a new chat
 

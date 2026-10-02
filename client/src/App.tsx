@@ -46,6 +46,15 @@ const ManagerMaintenance = lazy(() => import("./pages/manager/Maintenance"));
 const EmployeeMaintenance = lazy(() => import("./pages/employee/Maintenance"));
 const TenantMaintenance = lazy(() => import("./pages/tenant/Maintenance"));
 
+const OwnerAnnouncements = lazy(() => import("./pages/owner/Announcements"));
+const ManagerAnnouncements = lazy(
+  () => import("./pages/manager/Announcements"),
+);
+const EmployeeAnnouncements = lazy(
+  () => import("./pages/employee/Announcements"),
+);
+const TenantAnnouncements = lazy(() => import("./pages/tenant/Announcements"));
+
 export default function App() {
   const { user, loading } = useGlobal();
 
@@ -81,6 +90,7 @@ export default function App() {
             <Route path="analytics" element={<OwnerAnalytics />} />
             <Route path="financial" element={<OwnerFinancial />} />
             <Route path="maintenance" element={<OwnerMaintenance />} />
+            <Route path="announcements" element={<OwnerAnnouncements />} />
             <Route path="settings" element={<OwnerSettings />} />
           </Route>
 
@@ -99,6 +109,7 @@ export default function App() {
             <Route path="employees" element={<ManagerEmployees />} />
             <Route path="tenants" element={<ManagerTenants />} />
             <Route path="maintenance" element={<ManagerMaintenance />} />
+            <Route path="announcements" element={<ManagerAnnouncements />} />
           </Route>
 
           {/* ── Employee ──────────────────────────────────────────── */}
@@ -114,6 +125,7 @@ export default function App() {
             <Route path="dashboard" element={<EmployeeDashboard />} />
             <Route path="building" element={<EmployeeBuilding />} />
             <Route path="maintenance" element={<EmployeeMaintenance />} />
+            <Route path="announcements" element={<EmployeeAnnouncements />} />
           </Route>
 
           {/* ── Tenant ────────────────────────────────────────────── */}
@@ -129,6 +141,7 @@ export default function App() {
             <Route path="dashboard" element={<TenantDashboard />} />
             <Route path="lease" element={<TenantLease />} />
             <Route path="maintenance" element={<TenantMaintenance />} />
+            <Route path="announcements" element={<TenantAnnouncements />} />
           </Route>
 
           {/* Catch-all */}
