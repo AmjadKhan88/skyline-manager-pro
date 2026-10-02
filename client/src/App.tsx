@@ -55,6 +55,10 @@ const EmployeeAnnouncements = lazy(
 );
 const TenantAnnouncements = lazy(() => import("./pages/tenant/Announcements"));
 
+const OwnerDocuments = lazy(() => import("./pages/owner/Documents"));
+const ManagerDocuments = lazy(() => import("./pages/manager/Documents"));
+const TenantDocuments = lazy(() => import("./pages/tenant/Documents"));
+
 export default function App() {
   const { user, loading } = useGlobal();
 
@@ -91,6 +95,7 @@ export default function App() {
             <Route path="financial" element={<OwnerFinancial />} />
             <Route path="maintenance" element={<OwnerMaintenance />} />
             <Route path="announcements" element={<OwnerAnnouncements />} />
+            <Route path="documents" element={<OwnerDocuments />} />
             <Route path="settings" element={<OwnerSettings />} />
           </Route>
 
@@ -110,6 +115,7 @@ export default function App() {
             <Route path="tenants" element={<ManagerTenants />} />
             <Route path="maintenance" element={<ManagerMaintenance />} />
             <Route path="announcements" element={<ManagerAnnouncements />} />
+            <Route path="documents" element={<ManagerDocuments />} />
           </Route>
 
           {/* ── Employee ──────────────────────────────────────────── */}
@@ -142,6 +148,7 @@ export default function App() {
             <Route path="lease" element={<TenantLease />} />
             <Route path="maintenance" element={<TenantMaintenance />} />
             <Route path="announcements" element={<TenantAnnouncements />} />
+            <Route path="documents" element={<TenantDocuments />} />
           </Route>
 
           {/* Catch-all */}

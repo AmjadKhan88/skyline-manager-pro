@@ -47,7 +47,7 @@ server/
 │   ├── models/                    ← stays centralized (Sequelize needs this for associations)
 │   │   ├── User.model.js, OwnerProfile.model.js, UserProfile.model.js,
 │   │   │   Building.model.js, Tenancy.model.js, Invitation.model.js,
-│   │   │   MaintenanceRequest.model.js, Announcement.model.js, associations.js, index.js
+│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, associations.js, index.js
 │   ├── shared/
 │   │   ├── middlewares/  (authenticate, authorize, tenantScope, validate, errorHandler, rateLimiter, multer)
 │   │   ├── utils/         (ApiResponse, asyncHandler)
@@ -60,7 +60,8 @@ server/
 │   │   ├── tenants/     (controller, routes)
 │   │   ├── manager/     (controller, routes) — manager's OWN scoped dashboard/building view
 │   │   ├── maintenance/ (controller, routes, validator) — work orders, see section 6d
-│   │   └── announcements/ (controller, routes, validator) — broadcast posts, see section 6e
+│   │   ├── announcements/ (controller, routes, validator) — broadcast posts, see section 6e
+│   │   └── documents/ (controller, routes, validator) — lease/ID/inspection storage, see section 6f
 │   └── routes/index.js  (mounts all feature routers under /api/v1)
 └── server.js
 ```

@@ -15,6 +15,7 @@ import {
   Sparkles,
   Wrench,
   Megaphone,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import api from "../../lib/api";
@@ -36,6 +37,7 @@ const NAV_CONFIG = {
         { label: "Tenants", icon: UsersRound, to: "/owner/tenants" },
         { label: "Maintenance", icon: Wrench, to: "/owner/maintenance" },
         { label: "Announcements", icon: Megaphone, to: "/owner/announcements" },
+        { label: "Documents", icon: FolderOpen, to: "/owner/documents" },
       ],
     },
     {
@@ -64,6 +66,7 @@ const NAV_CONFIG = {
           icon: Megaphone,
           to: "/manager/announcements",
         },
+        { label: "Documents", icon: FolderOpen, to: "/manager/documents" },
       ],
     },
   ],
@@ -98,6 +101,7 @@ const NAV_CONFIG = {
           icon: Megaphone,
           to: "/tenant/announcements",
         },
+        { label: "Documents", icon: FolderOpen, to: "/tenant/documents" },
       ],
     },
   ],
