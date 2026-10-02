@@ -42,6 +42,23 @@ export interface Announcement {
   author?: { id: string; name: string; role: string };
 }
 
+export type DocumentCategory = 'lease' | 'id_proof' | 'insurance' | 'inspection' | 'permit' | 'financial' | 'other';
+
+export interface AppDocument {
+  id: string;
+  buildingId: string | null;
+  tenancyId: string | null;
+  subjectUserId: string | null;
+  title: string;
+  category: DocumentCategory;
+  fileUrl: string;
+  fileType: string;
+  createdAt: string;
+  building?: { id: string; name: string } | null;
+  subject?: { id: string; name: string; role: string } | null;
+  uploadedBy: { id: string; name: string; role: string };
+}
+
 export interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
