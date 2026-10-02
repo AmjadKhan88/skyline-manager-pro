@@ -24,6 +24,7 @@ import Building from "./Building.model.js";
 import Tenancy from "./Tenancy.model.js";
 import Invitation from "./Invitation.model.js";
 import Announcement from "./Announcement.model.js";
+import Document from "./Document.model.js";
 
 // Run all associations (MUST be after all model imports)
 import "./associations.js";
@@ -38,4 +39,5 @@ export {
   Invitation,
   MaintenanceRequest,
   Announcement,
+  Document,
 };

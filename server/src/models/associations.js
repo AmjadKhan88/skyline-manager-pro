@@ -34,6 +34,7 @@ import Building from "./Building.model.js";
 import Tenancy from "./Tenancy.model.js";
 import Invitation from "./Invitation.model.js";
 import Announcement from "./Announcement.model.js";
+import Document from "./Document.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
@@ -154,4 +155,25 @@ Invitation.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
 User.hasMany(Invitation, { foreignKey: "userId", as: "receivedInvitations" });
 Invitation.belongsTo(User, { foreignKey: "userId", as: "invitedUser" });
 
-export { User, OwnerProfile, UserProfile, Building, Tenancy, Invitation };
+// Documents
+Building.hasMany(Document, { foreignKey: "buildingId", as: "documents" });
+Document.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
+
+Tenancy.hasMany(Document, { foreignKey: "tenancyId", as: "documents" });
+Document.belongsTo(Tenancy, { foreignKey: "tenancyId", as: "tenancy" });
+
+User.hasMany(Document, { foreignKey: "subjectUserId", as: "ownDocuments" });
+Document.belongsTo(User, { foreignKey: "subjectUserId", as: "subject" });
+
+User.hasMany(Document, { foreignKey: "uploadedById", as: "uploadedDocuments" });
+Document.belongsTo(User, { foreignKey: "uploadedById", as: "uploadedBy" });
+
+export {
+  User,
+  OwnerProfile,
+  UserProfile,
+  Building,
+  Tenancy,
+  Invitation,
+  Document,
+};
