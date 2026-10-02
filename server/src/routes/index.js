@@ -14,6 +14,7 @@ import tenantRoutes from "../features/tenants/tenant.routes.js";
 import maintenanceRoutes from "../features/maintenance/maintenance.routes.js";
 import announcementRoutes from "../features/announcements/announcement.routes.js";
 import documentRoutes from "../features/documents/document.routes.js";
+import paymentRoutes from "../features/payments/payment.routes.js";
 
 const v1Router = express.Router();
 
@@ -25,5 +26,6 @@ v1Router.use("/tenants", tenantRoutes);
 v1Router.use("/maintenance", maintenanceRoutes);
 v1Router.use("/announcements", announcementRoutes);
 v1Router.use("/documents", documentRoutes);
+v1Router.use("/payments", paymentRoutes);
 
 export default v1Router;

@@ -36,6 +36,9 @@ import Invitation from "./Invitation.model.js";
 import Announcement from "./Announcement.model.js";
 import Document from "./Document.model.js";
 
+import PaymentAccount from "./PaymentAccount.model.js";
+import PaymentSubmission from "./PaymentSubmission.model.js";
+
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
   foreignKey: "userId",
@@ -167,6 +170,43 @@ Document.belongsTo(User, { foreignKey: "subjectUserId", as: "subject" });
 
 User.hasMany(Document, { foreignKey: "uploadedById", as: "uploadedDocuments" });
 Document.belongsTo(User, { foreignKey: "uploadedById", as: "uploadedBy" });
+
+// Payment Accounts & Submissions
+User.hasMany(PaymentAccount, { foreignKey: "ownerId", as: "paymentAccounts" });
+PaymentAccount.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
+
+Tenancy.hasMany(PaymentSubmission, {
+  foreignKey: "tenancyId",
+  as: "paymentSubmissions",
+});
+PaymentSubmission.belongsTo(Tenancy, {
+  foreignKey: "tenancyId",
+  as: "tenancy",
+});
+
+User.hasMany(PaymentSubmission, {
+  foreignKey: "tenantId",
+  as: "mySubmissions",
+});
+PaymentSubmission.belongsTo(User, { foreignKey: "tenantId", as: "tenant" });
+
+User.hasMany(PaymentSubmission, {
+  foreignKey: "reviewedById",
+  as: "reviewedSubmissions",
+});
+PaymentSubmission.belongsTo(User, {
+  foreignKey: "reviewedById",
+  as: "reviewedBy",
+});
+
+PaymentAccount.hasMany(PaymentSubmission, {
+  foreignKey: "paymentAccountId",
+  as: "submissions",
+});
+PaymentSubmission.belongsTo(PaymentAccount, {
+  foreignKey: "paymentAccountId",
+  as: "paymentAccount",
+});
 
 export {
   User,

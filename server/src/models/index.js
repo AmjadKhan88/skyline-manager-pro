@@ -29,6 +29,9 @@ import Document from "./Document.model.js";
 // Run all associations (MUST be after all model imports)
 import "./associations.js";
 
+import PaymentAccount from "./PaymentAccount.model.js";
+import PaymentSubmission from "./PaymentSubmission.model.js";
+
 // Re-export for convenient destructured imports
 export {
   User,
@@ -40,4 +43,6 @@ export {
   MaintenanceRequest,
   Announcement,
   Document,
+  PaymentAccount,
+  PaymentSubmission,
 };
