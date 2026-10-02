@@ -99,15 +99,16 @@ client/src/
 ├── pages/
 │   ├── Home.tsx           ← public landing page + role-select buttons → opens RoleModal
 │   ├── auth/               (VerifyEmail.tsx, ChangePassword.tsx)
-│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements)
-│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements)
+│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements, Documents)
+│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements, Documents)
 │   ├── employee/           (Dashboard, Building, Maintenance, Announcements)
-│   └── tenant/             (Dashboard, Lease, Maintenance, Announcements)
+│   └── tenant/             (Dashboard, Lease, Maintenance, Announcements, Documents)
 ├── lib/maintenanceStyles.ts  ← shared category/priority/status badge config, used by all 4 Maintenance pages
 ├── lib/announcementStyles.ts ← shared priority badge config, used by all 4 Announcements pages
+├── lib/documentStyles.ts     ← shared category icon/label config, used by Owner/Manager/Tenant Documents pages
 └── types/index.ts          ← THE canonical UserRole/User/Building/Tenancy/etc. types. Never redeclare UserRole locally anywhere else.
 ```
-All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d) and `Announcements` (see 6e).
+All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d), `Announcements` (see 6e), and `Documents` (see 6f — Owner/Manager/Tenant only, not Employee, a deliberate scoping choice).
 
 ### Critical frontend conventions — READ BEFORE TOUCHING API CALLS OR ROUTING
 
@@ -185,18 +186,28 @@ Built right after Maintenance, from the same research pass (announcements/commun
 - **Posting rules**: owner can post to any specific building or portfolio-wide (`buildingId: null`); a manager can only ever post to their own building — **the server forces this and ignores whatever `buildingId` the client sends** for a manager request, rather than trusting it. Only the original author (or an owner, for anyone's post in their portfolio) can edit/delete.
 - **Frontend**: 4 pages again, but only 2 real variants — owner gets full CRUD + a building filter; manager gets create (building auto-forced) + edit/delete scoped to their own posts only (an `isMine` check in the UI, enforced for real server-side too); employee and tenant are plain read-only feeds (literally identical component logic, just copy-pasted with a different accent color — a candidate for the same kind of consolidation `Managers.tsx`/`Employees.tsx` already need). Shared priority badge styling in `lib/announcementStyles.ts`.
 
+## 6f. Document Storage — third brand-new feature, deliberately scoped to 3 of 4 roles
+
+The other Tier 1 feature from the research. Unlike Maintenance/Announcements, this one is **not** built for Employee — a considered choice, not an oversight: in real property-management software, document access (leases, ID verification, insurance) is normally an owner/manager/tenant concern, and extending it to general maintenance/admin staff wasn't justified by anything in the research.
+
+- **New model**: `Document.model.js` (migration `create-documents`). Fields: `buildingId` (nullable), `tenancyId` (nullable — set for lease documents), `subjectUserId` (nullable — whose personal document this is, e.g. an ID or insurance file), `uploadedById`, `title`, `category` (lease/id_proof/insurance/inspection/permit/financial/other), `fileUrl`, `fileType`. A document can be linked to a building, a tenancy, a specific person, or nothing specific — deliberately loose rather than forcing a rigid combination, since real documents don't all fit one shape.
+- **New feature folder**: `features/documents/` — mounted at `/api/v1/documents`. Reuses the Cloudinary/multer pipeline, extended with a new `documentUpload`/`singleDocumentUpload` config that (unlike the avatar/CNIC `imagesUpload`) accepts PDFs via `resource_type: "auto"`, with a larger 10MB limit since lease scans run bigger than profile photos.
+- **Visibility**: owner sees their whole portfolio; manager sees documents tied to their building OR to any tenancy within it (so they can see a tenant's lease/ID for verification — a deliberate real-world-accurate choice, not a privacy oversight); tenant sees only documents that are specifically theirs (`subjectUserId` = them, or `tenancyId` = their own lease).
+- **Upload rules**: owner/manager can upload any category, scoped to their building/portfolio; **a tenant can only self-upload `id_proof`/`insurance`** — the server rejects any other category from a tenant and forces `subjectUserId` to themselves, since a lease is something the owner/manager issues, not something a tenant should be able to fabricate.
+- **Frontend**: 3 pages (`owner/Documents.tsx` full browse/upload/delete with building+category filters; `manager/Documents.tsx` their building + its tenants' leases; `tenant/Documents.tsx` their own documents + self-service ID/insurance upload). Shared category icon/label config in `lib/documentStyles.ts`. The shared type is named `AppDocument`, not `Document` — `Document` collides with the browser's built-in DOM type.
+
 ## 7. Known-pending / not yet built
 
 - The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — **now proven, not just suspected**, to cause repeat bugs (the sidebar-toggle fix had to be applied 4 separate times). Collapsing into one shared layout + a `useSidebarState()` hook should be a near-term priority, not just a nice-to-have.
 - `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component. The employee/tenant `Announcements.tsx` pages are now in the same boat (identical logic, copy-pasted).
 - Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
 - Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet.
-- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — Maintenance (6d) and now Announcements (6e) are both real, timestamped event sources that could feed this instead.
-- Dashboard/Analytics activity feeds could now incorporate real `MaintenanceRequest`/`Announcement` events, not just buildings/staff/tenants creation timestamps — natural next polish item.
+- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — Maintenance (6d), Announcements (6e), and Documents (6f) are all real, timestamped event sources that could feed this instead.
+- Dashboard/Analytics activity feeds could now incorporate real `MaintenanceRequest`/`Announcement`/`Document` events, not just buildings/staff/tenants creation timestamps — natural next polish item.
 - `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped) — worth tightening.
-- Remaining researched features not yet built, roughly in priority order: **document storage** (lease PDFs, ID documents), **online rent payment** (Stripe — would also finally enable a real historical revenue trend chart, since it creates dated transaction records), **expense tracking** (Financial currently only tracks revenue, not the cost side), vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
+- Remaining researched features not yet built, roughly in priority order: **online rent payment** (Stripe — would also finally enable a real historical revenue trend chart, since it creates dated transaction records), **expense tracking** (Financial currently only tracks revenue, not the cost side), vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
 - No automated tests anywhere yet.
-- `.sequelizerc` / migrations set up — now 3 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`) — future schema changes need new migration files, not manual edits to models + hope.
+- `.sequelizerc` / migrations set up — now 4 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`, `create-documents`) — future schema changes need new migration files, not manual edits to models + hope.
 
 ## 8. How to resume in a new chat
 
