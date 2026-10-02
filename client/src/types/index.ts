@@ -293,3 +293,36 @@ export interface AuthState {
   loading: boolean;
   isAuthenticated: boolean;
 }
+
+export type PaymentMethod = 'bank_transfer' | 'jazzcash' | 'easypaisa' | 'other';
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface PaymentAccount {
+  id: string;
+  method: PaymentMethod;
+  label: string;
+  accountTitle: string;
+  accountNumber: string;
+  bankName?: string | null;
+  iban?: string | null;
+  qrCodeUrl?: string | null;
+  instructions?: string | null;
+  isActive: boolean;
+}
+
+export interface PaymentSubmission {
+  id: string;
+  amount: number;
+  periodMonth?: string | null;
+  transactionReference?: string | null;
+  proofImageUrl: string;
+  status: SubmissionStatus;
+  method: PaymentMethod;
+  reviewNotes?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+  tenant: { id: string; name: string; email: string };
+  reviewedBy?: { id: string; name: string } | null;
+  tenancy: { id: string; unitNumber: string; monthlyRent: number; building: { id: string; name: string } };
+  paymentAccount?: { id: string; label: string; method: PaymentMethod } | null;
+}
