@@ -32,6 +32,8 @@ import "./associations.js";
 import PaymentAccount from "./PaymentAccount.model.js";
 import PaymentSubmission from "./PaymentSubmission.model.js";
 
+import Expense from "./Expense.model.js";
+
 // Re-export for convenient destructured imports
 export {
   User,
@@ -45,4 +47,5 @@ export {
   Document,
   PaymentAccount,
   PaymentSubmission,
+  Expense,
 };

@@ -10,6 +10,7 @@ import {
   Building,
   Tenancy,
   OwnerProfile,
+  Expense,
 } from "../../models/index.js";
 import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/utils/ApiResponse.js";
@@ -342,8 +343,36 @@ export const getFinancial = asyncHandler(async (req, res) => {
     { expected: 0, collected: 0, outstanding: 0 },
   );
 
+  const expensesByBuilding = await Promise.all(
+    buildings.map(async (b) => {
+      const total = await Expense.sum("amount", {
+        where: { buildingId: b.id, ownerId },
+      });
+      return { id: b.id, total: total || 0 };
+    }),
+  );
+
+  // Merge expenses into the revenue-by-building array so the frontend gets one combined row per building
+  const financialsByBuilding = revenueByBuilding.map((rb) => {
+    const exp = expensesByBuilding.find((e) => e.id === rb.id)?.total || 0;
+    return { ...rb, expenses: exp, netProfit: rb.collected - exp };
+  });
+
+  const totalExpenses = expensesByBuilding.reduce((sum, e) => sum + e.total, 0);
+
+  const totals = revenueByBuilding.reduce(
+    (acc, b) => ({
+      expected: acc.expected + b.expected,
+      collected: acc.collected + b.collected,
+      outstanding: acc.outstanding + b.outstanding,
+    }),
+    { expected: 0, collected: 0, outstanding: 0 },
+  );
+  totals.expenses = totalExpenses;
+  totals.netProfit = totals.collected - totalExpenses;
+
   return ApiResponse.success(res, 200, "Financial data fetched.", {
-    revenueByBuilding,
+    revenueByBuilding: financialsByBuilding,
     outstanding,
     totals,
   });

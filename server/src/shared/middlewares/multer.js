@@ -42,3 +42,4 @@ export const singleDocumentUpload = documentUpload.single("file");
 
 export const qrCodeUpload = upload.single("qrCode"); // for payment account QR codes (image only, reuses the existing `upload`)
 export const proofUpload = documentUpload.single("proof"); // for payment proof screenshots (reuses the PDF-capable `documentUpload` from the Documents feature, since some banks issue PDF receipts)
+export const receiptUpload = documentUpload.single("receipt"); // reuses the PDF-capable config from Documents
