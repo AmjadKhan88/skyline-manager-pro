@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
-import { Expense } from "../../types";
+import { Expense } from "../../types/index";
 import { EXPENSE_CATEGORY_CONFIG } from "../../lib/expenseStyles";
 import { useGlobal } from "../../context/GlobalContext";
 import { getErrorMessage } from "../../lib/utils";
