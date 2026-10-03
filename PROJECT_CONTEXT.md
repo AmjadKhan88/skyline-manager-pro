@@ -47,7 +47,7 @@ server/
 │   ├── models/                    ← stays centralized (Sequelize needs this for associations)
 │   │   ├── User.model.js, OwnerProfile.model.js, UserProfile.model.js,
 │   │   │   Building.model.js, Tenancy.model.js, Invitation.model.js,
-│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, PaymentAccount.model.js, PaymentSubmission.model.js, associations.js, index.js
+│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, PaymentAccount.model.js, PaymentSubmission.model.js, Expense.model.js, associations.js, index.js
 │   ├── shared/
 │   │   ├── middlewares/  (authenticate, authorize, tenantScope, validate, errorHandler, rateLimiter, multer)
 │   │   ├── utils/         (ApiResponse, asyncHandler)
@@ -62,7 +62,8 @@ server/
 │   │   ├── maintenance/ (controller, routes, validator) — work orders, see section 6d
 │   │   ├── announcements/ (controller, routes, validator) — broadcast posts, see section 6e
 │   │   ├── documents/ (controller, routes, validator) — lease/ID/inspection storage, see section 6f
-│   │   └── payments/ (paymentAccount.controller, paymentSubmission.controller, routes, validator) — manual payment system, see section 6g
+│   │   ├── payments/ (paymentAccount.controller, paymentSubmission.controller, routes, validator) — manual payment system, see section 6g
+│   │   └── expenses/ (controller, routes, validator) — expense tracking, see section 6h
 │   └── routes/index.js  (mounts all feature routers under /api/v1)
 └── server.js
 ```
@@ -100,17 +101,18 @@ client/src/
 ├── pages/
 │   ├── Home.tsx           ← public landing page + role-select buttons → opens RoleModal
 │   ├── auth/               (VerifyEmail.tsx, ChangePassword.tsx)
-│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements, Documents, PaymentAccounts, Payments)
-│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements, Documents, Payments)
+│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements, Documents, PaymentAccounts, Payments, Expenses)
+│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements, Documents, Payments, Expenses)
 │   ├── employee/           (Dashboard, Building, Maintenance, Announcements)
 │   └── tenant/             (Dashboard, Lease, Maintenance, Announcements, Documents, Payments)
 ├── lib/maintenanceStyles.ts  ← shared category/priority/status badge config, used by all 4 Maintenance pages
 ├── lib/announcementStyles.ts ← shared priority badge config, used by all 4 Announcements pages
 ├── lib/documentStyles.ts     ← shared category icon/label config, used by Owner/Manager/Tenant Documents pages
 ├── lib/paymentStyles.ts      ← shared method/status config, used by Owner/Manager/Tenant Payments pages
+├── lib/expenseStyles.ts      ← shared category icon/label config, used by Owner/Manager Expenses pages
 └── types/index.ts          ← THE canonical UserRole/User/Building/Tenancy/etc. types. Never redeclare UserRole locally anywhere else.
 ```
-All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d), `Announcements` (see 6e), `Documents` (see 6f — Owner/Manager/Tenant only, not Employee, a deliberate scoping choice), and the manual Payment system (see 6g — Owner/Manager/Tenant only).
+All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d), `Announcements` (see 6e), `Documents` (see 6f — Owner/Manager/Tenant only, not Employee, a deliberate scoping choice), the manual Payment system (see 6g — Owner/Manager/Tenant only), and Expense tracking (see 6h — Owner/Manager only, which also upgraded `Financial.tsx` from revenue-only to real profit/loss).
 
 ### Critical frontend conventions — READ BEFORE TOUCHING API CALLS OR ROUTING
 
@@ -210,18 +212,29 @@ The user flagged that Stripe/PayPal don't work for Pakistan. Researched the actu
 - **Frontend**: `owner/PaymentAccounts.tsx` (manage receiving accounts, QR upload), `owner/Payments.tsx` + `manager/Payments.tsx` (review queue, approve/reject with a reason, click-to-enlarge proof image — these two pages are intentionally near-identical, same situation as the Announcements/StaffTable consolidation candidates), and `tenant/Payments.tsx` (a 2-step modal: pick a payment method → see the real account details with copy-to-clipboard → enter amount/reference → upload proof → submit, plus their own submission history with status badges). The Tenant Dashboard's "Make a Payment" button, which was previously just a toast saying "not available yet," now links to this real page.
 - Proof uploads reuse the Documents feature's PDF-capable `documentUpload` config (`proofUpload` export in `multer.js`), since some banks issue PDF receipts, not just screenshots. QR code uploads reuse the plain image-only `upload` config (`qrCodeUpload` export).
 
+## 6h. Expense Tracking — fifth brand-new feature, completes the Financial picture
+
+The last Tier 1/Tier 2 item from the original research pass. `Financial.tsx` (6b) previously only tracked revenue — this adds the cost side, turning it into a real profit/loss view.
+
+- **New model**: `Expense.model.js` (migration `create-expenses`). Fields: `buildingId` (required — unlike Announcements/Documents, every expense belongs to exactly one building, which is how real property accounting works), `recordedById`, `category` (maintenance/utilities/salary/insurance/tax/repairs/supplies/other), `description`, `vendor`, `amount`, `expenseDate`, `receiptUrl`.
+- **New feature folder**: `features/expenses/` — mounted at `/api/v1/expenses`. Same ownership pattern as Announcements/Maintenance: a manager's `buildingId` is forced server-side on create (never trusted from the client), and a manager can only edit/delete expenses **they personally recorded** — an owner's own entries for that same building stay owner-only to edit.
+- **The integration**: `owner.controller.js`'s `getFinancial` (6b) now also computes `expensesByBuilding` and merges it into the existing `revenueByBuilding` response, adding `expenses` and `netProfit` (= collected − expenses) to each row and to the overall `totals`. `Financial.tsx` gained a 4th summary card (Net Profit) and a 3rd bar series on the existing revenue-by-building chart — no new page needed on the Financial side, just real numbers flowing into what was already there.
+- **Frontend**: `owner/Expenses.tsx` (full CRUD, building+category filters) and `manager/Expenses.tsx` (their building only, edit/delete gated to `recordedBy.id === user.id` in the UI, enforced server-side too). Receipt upload reuses the Documents feature's PDF-capable config (`receiptUpload` in `multer.js`). Not built for Employee/Tenant — recording costs is an owner/manager concern, same reasoning as Document Storage's Employee exclusion.
+
+**This completes the entire researched feature roadmap from the original "what's missing vs. real property-management software" pass** — Maintenance, Announcements, Documents, Manual Payments, and now Expense Tracking are all real, end-to-end, role-scoped features. Remaining pending items are either smaller (vendor accounts, e-signature, inspection checklists) or structural cleanup (the 4-layout consolidation, StaffTable consolidation) rather than new feature gaps.
+
 ## 7. Known-pending / not yet built
 
 - The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — **now proven, not just suspected**, to cause repeat bugs (the sidebar-toggle fix had to be applied 4 separate times). Collapsing into one shared layout + a `useSidebarState()` hook should be a near-term priority, not just a nice-to-have.
-- `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component. The employee/tenant `Announcements.tsx` pages, and now `owner`/`manager` `Payments.tsx`, are in the same boat (identical logic, copy-pasted).
+- `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component. The employee/tenant `Announcements.tsx` pages, and `owner`/`manager` `Payments.tsx` and `Expenses.tsx`, are in the same boat (identical logic, copy-pasted, same owner/manager scoping pattern repeated 5 times now across features).
 - Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
 - Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet (this is about the SaaS's own subscription tiers, unrelated to the tenant-to-owner rent payment system in 6g, which is now live).
-- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — Maintenance (6d), Announcements (6e), Documents (6f), and now Payment submissions (6g) are all real, timestamped event sources that could feed this instead.
-- Dashboard/Analytics/Financial could now incorporate real `PaymentSubmission` events — e.g. a real historical revenue trend chart is finally possible, since approved submissions are dated transaction records (the thing we previously said Stripe would have been needed for).
+- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — Maintenance (6d), Announcements (6e), Documents (6f), Payment submissions (6g), and now Expenses (6h) are all real, timestamped event sources that could feed this instead.
+- Dashboard/Analytics/Financial could now incorporate real `PaymentSubmission`/`Expense` events — e.g. a real historical revenue AND cost trend chart is finally possible, since approved payment submissions and dated expenses are real transaction records.
 - `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped) — worth tightening.
-- Remaining researched features not yet built, roughly in priority order: **expense tracking** (Financial currently only tracks revenue, not the cost side), vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
+- Remaining researched-but-smaller features not yet built: vendor/contractor accounts, lease e-signature, move-in/move-out inspection checklists.
 - No automated tests anywhere yet.
-- `.sequelizerc` / migrations set up — now 6 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`, `create-documents`, `create-payment-accounts`, `create-payment-submissions`) — future schema changes need new migration files, not manual edits to models + hope.
+- `.sequelizerc` / migrations set up — now 7 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`, `create-documents`, `create-payment-accounts`, `create-payment-submissions`, `create-expenses`) — future schema changes need new migration files, not manual edits to models + hope.
 
 ## 8. How to resume in a new chat
 

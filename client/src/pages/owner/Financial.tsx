@@ -228,7 +228,8 @@ export default function Financial() {
               }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            {/* <Bar
+
+            <Bar
               dataKey="expected"
               name="Expected"
               fill="#94a3b8"
@@ -241,27 +242,13 @@ export default function Financial() {
               fill="#10b981"
               radius={[0, 4, 4, 0]}
               barSize={14}
-            /> */}
-            <Bar
-              dataKey="expected"
-              name="Expected"
-              fill="#94a3b8"
-              radius={[0, 4, 4, 0]}
-              barSize={12}
-            />
-            <Bar
-              dataKey="collected"
-              name="Collected"
-              fill="#10b981"
-              radius={[0, 4, 4, 0]}
-              barSize={12}
             />
             <Bar
               dataKey="expenses"
               name="Expenses"
               fill="#ef4444"
               radius={[0, 4, 4, 0]}
-              barSize={12}
+              barSize={14}
             />
           </BarChart>
         </ResponsiveContainer>
