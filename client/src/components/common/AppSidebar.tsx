@@ -16,6 +16,8 @@ import {
   Wrench,
   Megaphone,
   FolderOpen,
+  CreditCard,
+  Landmark,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import api from "../../lib/api";
@@ -38,6 +40,12 @@ const NAV_CONFIG = {
         { label: "Maintenance", icon: Wrench, to: "/owner/maintenance" },
         { label: "Announcements", icon: Megaphone, to: "/owner/announcements" },
         { label: "Documents", icon: FolderOpen, to: "/owner/documents" },
+        { label: "Payments", icon: CreditCard, to: "/owner/payments" },
+        {
+          label: "Payment Accounts",
+          icon: Landmark,
+          to: "/owner/payment-accounts",
+        },
       ],
     },
     {
@@ -67,6 +75,7 @@ const NAV_CONFIG = {
           to: "/manager/announcements",
         },
         { label: "Documents", icon: FolderOpen, to: "/manager/documents" },
+        { label: "Payments", icon: CreditCard, to: "/manager/payments" },
       ],
     },
   ],
@@ -102,6 +111,7 @@ const NAV_CONFIG = {
           to: "/tenant/announcements",
         },
         { label: "Documents", icon: FolderOpen, to: "/tenant/documents" },
+        { label: "Payments", icon: CreditCard, to: "/tenant/payments" },
       ],
     },
   ],

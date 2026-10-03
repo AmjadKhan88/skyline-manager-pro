@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 interface LeaseData {
   unitNumber: string;
@@ -151,17 +152,12 @@ export default function TenantDashboard() {
               </div>
             </div>
 
-            <button
-              onClick={() =>
-                toast(
-                  "Online payments aren't available yet — pay your property manager directly for now.",
-                  { icon: "ℹ️" },
-                )
-              }
-              className="w-full py-3 px-4 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-xl font-medium transition-colors"
+            <Link
+              to="/tenant/payments"
+              className="block text-center w-full py-3 px-4 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-xl font-medium transition-colors"
             >
               Make a Payment
-            </button>
+            </Link>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 md:col-span-2">
