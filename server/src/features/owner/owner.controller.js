@@ -334,15 +334,6 @@ export const getFinancial = asyncHandler(async (req, res) => {
       leaseStart: t.leaseStart,
     }));
 
-  const totals = revenueByBuilding.reduce(
-    (acc, b) => ({
-      expected: acc.expected + b.expected,
-      collected: acc.collected + b.collected,
-      outstanding: acc.outstanding + b.outstanding,
-    }),
-    { expected: 0, collected: 0, outstanding: 0 },
-  );
-
   const expensesByBuilding = await Promise.all(
     buildings.map(async (b) => {
       const total = await Expense.sum("amount", {

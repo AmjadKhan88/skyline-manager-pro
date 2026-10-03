@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import {  z } from "zod";
+import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -69,26 +69,26 @@ const roleConfig: Record<UserRole, any> = {
 
 /* -------------------- ZOD SCHEMA -------------------- */
 
-const authSchema = z.object({
-  role: z.string(),
-  state: z.enum(["login", "signup"]),
-  name: z.string().optional(), // start optional
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-})
-.superRefine((data, ctx) => {
-  if (data.role === "owner" && data.state === "signup") {
-    if (!data.name || data.name.trim().length < 2) {
-      ctx.addIssue({
-        path: ["name"],
-        code: z.ZodIssueCode.too_small,
-        minimum: 2,
-        message: "Name is required",
-      });
+const authSchema = z
+  .object({
+    role: z.string(),
+    state: z.enum(["login", "signup"]),
+    name: z.string().optional(), // start optional
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.role === "owner" && data.state === "signup") {
+      if (!data.name || data.name.trim().length < 2) {
+        ctx.addIssue({
+          path: ["name"],
+          code: z.ZodIssueCode.too_small,
+          minimum: 2,
+          message: "Name is required",
+        });
+      }
     }
-  }
-});
-
+  });
 
 type AuthFormData = z.infer<typeof authSchema>;
 
@@ -99,7 +99,7 @@ interface RoleModalProps {
   onClose: () => void;
 }
 
-export function RoleModal({ selectedRole, onClose }: RoleModalProps) {  
+export function RoleModal({ selectedRole, onClose }: RoleModalProps) {
   const { user, setUser } = useGlobal();
   const navigate = useNavigate();
 
@@ -110,7 +110,6 @@ export function RoleModal({ selectedRole, onClose }: RoleModalProps) {
   }, [user, navigate]);
 
   const [state, setState] = useState<"login" | "signup">("login");
-
 
   const [form, setForm] = useState<AuthFormData>({
     role: selectedRole,
@@ -124,7 +123,7 @@ export function RoleModal({ selectedRole, onClose }: RoleModalProps) {
   const [serverError, setServerError] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-const config = roleConfig[selectedRole];
+  const config = roleConfig[selectedRole];
 
   if (!config) return null;
   const Icon = config.icon;
@@ -138,57 +137,52 @@ const config = roleConfig[selectedRole];
     }));
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const result = authSchema.safeParse({
-    ...form,
-    role: selectedRole,
-    state,
-  });
-
-  if (!result.success) {
-    const fieldErrors: Record<string, string> = {};
-
-    result.error.issues.forEach((err) => {
-      const field = err.path[0] as string;
-      fieldErrors[field] = err.message;
+    const result = authSchema.safeParse({
+      ...form,
+      role: selectedRole,
+      state,
     });
 
-    setErrors(fieldErrors);
-    console.log(fieldErrors)
-    return;
-  }
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
 
-  setErrors({});
-  setServerError("");
+      result.error.issues.forEach((err) => {
+        const field = err.path[0] as string;
+        fieldErrors[field] = err.message;
+      });
 
-  setLoading(true);
-
-  try {
-
-    const url = state === "login" ? "/auth/login" : "/auth/signup";
-
-    const { data } = await api.post(url, result.data);
-
-    if (data.success) {
-      toast.success(data.message);
-      setUser(data.data.user);
-      onClose();
-      navigate(`/${data.data.user.role}`);
+      setErrors(fieldErrors);
+      console.log(fieldErrors);
+      return;
     }
 
-  } catch (error:any) {
-    toast.error(error?.response?.data?.message || error.message);
-    setServerError(error?.response?.data?.message || error.message);
-    console.log(error);
-  } finally {
-    setLoading(false);
-  }
- 
-  
-};
+    setErrors({});
+    setServerError("");
 
+    setLoading(true);
+
+    try {
+      const url = state === "login" ? "/auth/login" : "/auth/signup";
+
+      const { data } = await api.post(url, result.data);
+
+      if (data.success) {
+        toast.success(data.message);
+        setUser(data.data.user);
+        onClose();
+        navigate(`/${data.data.user.role}`);
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error.message);
+      setServerError(error?.response?.data?.message || error.message);
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSocialLogin = (provider: string) => {
     if (provider === "Google") {
@@ -196,7 +190,6 @@ const config = roleConfig[selectedRole];
     }
     onClose();
   };
-  
 
   /* -------------------- JSX -------------------- */
 
@@ -225,9 +218,9 @@ const config = roleConfig[selectedRole];
           </ul>
         </div>
 
-         {serverError && (
-              <p className="text-red-500 my-2 text-xs">{serverError}</p>
-            )}
+        {serverError && (
+          <p className="text-red-500 my-2 text-xs">{serverError}</p>
+        )}
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -255,7 +248,6 @@ const config = roleConfig[selectedRole];
             {errors.email && (
               <p className="text-red-500 text-xs">{errors.email}</p>
             )}
-           
           </div>
 
           <div>
@@ -272,7 +264,13 @@ const config = roleConfig[selectedRole];
           </div>
 
           <Button type="submit" className="w-full" size="lg">
-           {loading ? <Loader2 className="animate-spin" /> : state === "login" ? "Sign In" : "Sign Up"}
+            {loading ? (
+              <Loader2 className="animate-spin" />
+            ) : state === "login" ? (
+              "Sign In"
+            ) : (
+              "Sign Up"
+            )}
           </Button>
         </form>
 
@@ -285,24 +283,34 @@ const config = roleConfig[selectedRole];
               </span>
             </div>
 
-              <Button
-                type="button"
-                className="w-full"
-                variant="destructive"
-                onClick={() => handleSocialLogin("Google")}
-              >
-                Google
-              </Button>
-
+            <Button
+              type="button"
+              className="w-full"
+              variant="destructive"
+              onClick={() => handleSocialLogin("Google")}
+            >
+              Google
+            </Button>
 
             <div className="text-center mt-6">
               <Button
                 variant="link"
-                onClick={() =>
-                  {setState((prev) => (prev === "login" ? "signup" : "login")), setServerError("")}
-                }
+                onClick={() => {
+                  (setState((prev) => (prev === "login" ? "signup" : "login")),
+                    setServerError(""));
+                }}
               >
-                {state === "login" ? <p>Not a member? <span className="text-sky-600">Sign up here</span></p> : <p>Already a member? <span className="text-sky-600">Login here</span></p>}
+                {state === "login" ? (
+                  <p>
+                    Not a member?{" "}
+                    <span className="text-sky-600">Sign up here</span>
+                  </p>
+                ) : (
+                  <p>
+                    Already a member?{" "}
+                    <span className="text-sky-600">Login here</span>
+                  </p>
+                )}
               </Button>
             </div>
           </>
