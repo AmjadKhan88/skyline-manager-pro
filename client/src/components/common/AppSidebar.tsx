@@ -18,6 +18,7 @@ import {
   FolderOpen,
   CreditCard,
   Landmark,
+  Receipt,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import api from "../../lib/api";
@@ -46,6 +47,7 @@ const NAV_CONFIG = {
           icon: Landmark,
           to: "/owner/payment-accounts",
         },
+        { label: "Expenses", icon: Receipt, to: "/owner/expenses" },
       ],
     },
     {
@@ -76,6 +78,7 @@ const NAV_CONFIG = {
         },
         { label: "Documents", icon: FolderOpen, to: "/manager/documents" },
         { label: "Payments", icon: CreditCard, to: "/manager/payments" },
+        { label: "Expenses", icon: Receipt, to: "/manager/expenses" },
       ],
     },
   ],

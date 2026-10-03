@@ -219,7 +219,7 @@ export interface AnalyticsData {
 }
 
 export interface FinancialData {
-  revenueByBuilding: { id: string; name: string; expected: number; collected: number; outstanding: number }[];
+  revenueByBuilding: { id: string; name: string; expected: number; collected: number; outstanding: number; expenses: number; netProfit: number }[];
   outstanding: {
     tenancyId: string;
     tenantId: string;
@@ -231,7 +231,7 @@ export interface FinancialData {
     paymentStatus: 'unpaid' | 'overdue' | 'partial';
     leaseStart: string;
   }[];
-  totals: { expected: number; collected: number; outstanding: number };
+  totals: { expected: number; collected: number; outstanding: number; expenses: number; netProfit: number };
 }
 
 // ─── Dashboard Stats Types ────────────────────────────────────────────────────
@@ -325,4 +325,19 @@ export interface PaymentSubmission {
   reviewedBy?: { id: string; name: string } | null;
   tenancy: { id: string; unitNumber: string; monthlyRent: number; building: { id: string; name: string } };
   paymentAccount?: { id: string; label: string; method: PaymentMethod } | null;
+}
+
+export type ExpenseCategory = 'maintenance' | 'utilities' | 'salary' | 'insurance' | 'tax' | 'repairs' | 'supplies' | 'other';
+
+export interface Expense {
+  id: string;
+  buildingId: string;
+  category: ExpenseCategory;
+  description: string;
+  vendor?: string | null;
+  amount: number;
+  expenseDate: string;
+  receiptUrl?: string | null;
+  building: { id: string; name: string };
+  recordedBy: { id: string; name: string; role: string };
 }

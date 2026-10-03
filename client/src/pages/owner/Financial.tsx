@@ -14,6 +14,7 @@ import {
   AlertCircle,
   RefreshCw,
   CheckCircle2,
+  Receipt,
 } from "lucide-react";
 import {
   BarChart,
@@ -72,6 +73,7 @@ function SummaryCard({
 // bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400
 // bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400
 // bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400
+// bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400
 
 export default function Financial() {
   const [data, setData] = useState<FinancialData | null>(null);
@@ -161,10 +163,16 @@ export default function Financial() {
           accent="emerald"
         />
         <SummaryCard
-          title="Outstanding"
-          value={data.totals.outstanding}
-          icon={AlertCircle}
+          title="Expenses"
+          value={data.totals.expenses}
+          icon={Receipt}
           accent="red"
+        />
+        <SummaryCard
+          title="Net Profit"
+          value={data.totals.netProfit}
+          icon={TrendingUp}
+          accent="violet"
         />
       </div>
 
@@ -220,7 +228,7 @@ export default function Financial() {
               }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar
+            {/* <Bar
               dataKey="expected"
               name="Expected"
               fill="#94a3b8"
@@ -233,6 +241,27 @@ export default function Financial() {
               fill="#10b981"
               radius={[0, 4, 4, 0]}
               barSize={14}
+            /> */}
+            <Bar
+              dataKey="expected"
+              name="Expected"
+              fill="#94a3b8"
+              radius={[0, 4, 4, 0]}
+              barSize={12}
+            />
+            <Bar
+              dataKey="collected"
+              name="Collected"
+              fill="#10b981"
+              radius={[0, 4, 4, 0]}
+              barSize={12}
+            />
+            <Bar
+              dataKey="expenses"
+              name="Expenses"
+              fill="#ef4444"
+              radius={[0, 4, 4, 0]}
+              barSize={12}
             />
           </BarChart>
         </ResponsiveContainer>

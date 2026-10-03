@@ -66,6 +66,9 @@ const OwnerPayments = lazy(() => import("./pages/owner/Payments"));
 const ManagerPayments = lazy(() => import("./pages/manager/Payments"));
 const TenantPayments = lazy(() => import("./pages/tenant/Payments"));
 
+const OwnerExpenses = lazy(() => import("./pages/owner/Expenses"));
+const ManagerExpenses = lazy(() => import("./pages/manager/Expenses"));
+
 export default function App() {
   const { user, loading } = useGlobal();
 
@@ -105,6 +108,7 @@ export default function App() {
             <Route path="documents" element={<OwnerDocuments />} />
             <Route path="payment-accounts" element={<OwnerPaymentAccounts />} />
             <Route path="payments" element={<OwnerPayments />} />
+            <Route path="expenses" element={<OwnerExpenses />} />
             <Route path="settings" element={<OwnerSettings />} />
           </Route>
 
@@ -126,6 +130,7 @@ export default function App() {
             <Route path="announcements" element={<ManagerAnnouncements />} />
             <Route path="documents" element={<ManagerDocuments />} />
             <Route path="payments" element={<ManagerPayments />} />
+            <Route path="expenses" element={<ManagerExpenses />} />
           </Route>
 
           {/* ── Employee ──────────────────────────────────────────── */}
