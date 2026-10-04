@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { Wrench, RefreshCw, User as UserIcon, Trash2 } from "lucide-react";
+import {
+  Wrench,
+  RefreshCw,
+  User as UserIcon,
+  Trash2,
+  Hammer,
+} from "lucide-react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
-import { MaintenanceRequest } from "../../types";
+import { MaintenanceRequest } from "../../types/index";
 import {
   CATEGORY_CONFIG,
   PRIORITY_STYLES,
@@ -23,6 +29,9 @@ export default function OwnerMaintenance() {
   const [filterStatus, setFilterStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [vendors, setVendors] = useState<
+    { id: string; name: string; companyName?: string | null }[]
+  >([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -30,14 +39,16 @@ export default function OwnerMaintenance() {
       const params: Record<string, string> = {};
       if (filterBuilding) params.buildingId = filterBuilding;
       if (filterStatus) params.status = filterStatus;
-      const [reqRes, staffRes, buildRes] = await Promise.all([
+      const [reqRes, staffRes, buildRes, vendorRes] = await Promise.all([
         api.get("/maintenance", { params }),
         api.get("/staff", { params: { limit: 100 } }),
         api.get("/buildings", { params: { limit: 100 } }),
+        api.get("/vendors"),
       ]);
       setRequests(reqRes.data.data || []);
       setStaff(staffRes.data.data || []);
       setBuildings(buildRes.data.data || []);
+      setVendors(vendorRes.data.data.vendors || []);
     } catch {
       toast.error("Failed to load maintenance requests");
     } finally {
@@ -49,11 +60,16 @@ export default function OwnerMaintenance() {
     fetchData();
   }, [filterBuilding, filterStatus]);
 
-  const handleAssign = async (id: string, assignedToId: string) => {
-    if (!assignedToId) return;
+  const handleAssign = async (id: string, value: string) => {
+    if (!value) return;
+    const [type, targetId] = value.split(":");
     setBusyId(id);
     try {
-      await api.patch(`/maintenance/${id}/assign`, { assignedToId });
+      const payload =
+        type === "vendor"
+          ? { assignedVendorId: targetId }
+          : { assignedToId: targetId };
+      await api.patch(`/maintenance/${id}/assign`, payload);
       toast.success("Assigned");
       fetchData();
     } catch (err) {
@@ -174,6 +190,19 @@ export default function OwnerMaintenance() {
                       >
                         {STATUS_LABELS[r.status]}
                       </span>
+                      <span
+                        className={cn(
+                          "text-xs px-2 py-0.5 rounded-full font-medium",
+                          STATUS_STYLES[r.status],
+                        )}
+                      >
+                        {STATUS_LABELS[r.status]}
+                      </span>
+                      {r.assignedVendor && (
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Hammer className="w-3 h-3" /> {r.assignedVendor.name}
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                       {r.title}
@@ -203,17 +232,33 @@ export default function OwnerMaintenance() {
                     <div className="flex items-center gap-2 text-sm">
                       <UserIcon className="w-4 h-4 text-gray-400" />
                       <select
-                        value={r.assignedTo?.id || ""}
+                        value={
+                          r.assignedTo
+                            ? `staff:${r.assignedTo.id}`
+                            : r.assignedVendor
+                              ? `vendor:${r.assignedVendor.id}`
+                              : ""
+                        }
                         onChange={(e) => handleAssign(r.id, e.target.value)}
                         disabled={busyId === r.id}
                         className="text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-gray-700 dark:text-gray-200"
                       >
                         <option value="">Assign to...</option>
-                        {eligibleStaff.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.role})
-                          </option>
-                        ))}
+                        <optgroup label="Staff">
+                          {eligibleStaff.map((s) => (
+                            <option key={s.id} value={`staff:${s.id}`}>
+                              {s.name} ({s.role})
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Vendors">
+                          {vendors.map((v) => (
+                            <option key={v.id} value={`vendor:${v.id}`}>
+                              {v.name}
+                              {v.companyName ? ` — ${v.companyName}` : ""}
+                            </option>
+                          ))}
+                        </optgroup>
                       </select>
                     </div>
                     <select

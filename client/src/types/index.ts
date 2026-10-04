@@ -27,6 +27,7 @@ export interface MaintenanceRequest {
   building?: { id: string; name: string; address: string };
   reportedBy?: { id: string; name: string; email: string; role: string };
   assignedTo?: { id: string; name: string; email: string; role: string } | null;
+  assignedVendor?: { id: string; name: string; companyName?: string | null; phone?: string | null } | null;
 }
 
 export type AnnouncementPriority = 'info' | 'warning' | 'urgent';
@@ -340,4 +341,17 @@ export interface Expense {
   receiptUrl?: string | null;
   building: { id: string; name: string };
   recordedBy: { id: string; name: string; role: string };
+}
+
+export type VendorSpecialty = 'plumbing' | 'electrical' | 'hvac' | 'appliance' | 'structural' | 'pest-control' | 'general';
+
+export interface Vendor {
+  id: string;
+  name: string;
+  companyName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  specialty: VendorSpecialty;
+  notes?: string | null;
+  isActive: boolean;
 }

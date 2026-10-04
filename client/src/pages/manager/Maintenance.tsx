@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Wrench, RefreshCw, User as UserIcon } from "lucide-react";
+import { Wrench, RefreshCw, User as UserIcon, Hammer } from "lucide-react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
-import { MaintenanceRequest } from "../../types";
+import { MaintenanceRequest } from "../../types/index";
 import {
   CATEGORY_CONFIG,
   PRIORITY_STYLES,
@@ -19,14 +19,20 @@ export default function ManagerMaintenance() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const [vendors, setVendors] = useState<
+    { id: string; name: string; companyName?: string | null }[]
+  >([]);
+
   const fetchData = async () => {
     try {
-      const [reqRes, empRes] = await Promise.all([
+      const [reqRes, empRes, vendorRes] = await Promise.all([
         api.get("/maintenance"),
         api.get("/staff", { params: { role: "employee", limit: 100 } }),
+        api.get("/vendors"),
       ]);
       setRequests(reqRes.data.data || []);
       setEmployees(empRes.data.data || []);
+      setVendors(vendorRes.data.data.vendors || []);
     } catch {
       toast.error("Failed to load maintenance requests");
     } finally {
@@ -38,11 +44,16 @@ export default function ManagerMaintenance() {
     fetchData();
   }, []);
 
-  const handleAssign = async (id: string, assignedToId: string) => {
-    if (!assignedToId) return;
+  const handleAssign = async (id: string, value: string) => {
+    if (!value) return;
+    const [type, targetId] = value.split(":");
     setBusyId(id);
     try {
-      await api.patch(`/maintenance/${id}/assign`, { assignedToId });
+      const payload =
+        type === "vendor"
+          ? { assignedVendorId: targetId }
+          : { assignedToId: targetId };
+      await api.patch(`/maintenance/${id}/assign`, payload);
       toast.success("Assigned");
       fetchData();
     } catch (err) {
@@ -123,6 +134,11 @@ export default function ManagerMaintenance() {
                       >
                         {STATUS_LABELS[r.status]}
                       </span>
+                      {r.assignedVendor && (
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Hammer className="w-3 h-3" /> {r.assignedVendor.name}
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                       {r.title}
@@ -150,17 +166,33 @@ export default function ManagerMaintenance() {
                   <div className="flex items-center gap-2 text-sm">
                     <UserIcon className="w-4 h-4 text-gray-400" />
                     <select
-                      value={r.assignedTo?.id || ""}
+                      value={
+                        r.assignedTo
+                          ? `staff:${r.assignedTo.id}`
+                          : r.assignedVendor
+                            ? `vendor:${r.assignedVendor.id}`
+                            : ""
+                      }
                       onChange={(e) => handleAssign(r.id, e.target.value)}
                       disabled={busyId === r.id}
                       className="text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-gray-700 dark:text-gray-200"
                     >
-                      <option value="">Assign to employee...</option>
-                      {employees.map((e) => (
-                        <option key={e.id} value={e.id}>
-                          {e.name}
-                        </option>
-                      ))}
+                      <option value="">Assign to...</option>
+                      <optgroup label="Staff">
+                        {employees.map((s) => (
+                          <option key={s.id} value={`staff:${s.id}`}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Vendors">
+                        {vendors.map((v) => (
+                          <option key={v.id} value={`vendor:${v.id}`}>
+                            {v.name}
+                            {v.companyName ? ` — ${v.companyName}` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
                   <select
