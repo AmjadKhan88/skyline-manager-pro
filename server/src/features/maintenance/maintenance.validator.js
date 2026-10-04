@@ -18,8 +18,9 @@ export const createRequestSchema = Joi.object({
 });
 
 export const assignRequestSchema = Joi.object({
-  assignedToId: Joi.string().uuid().required(),
-});
+  assignedToId: Joi.string().uuid().allow(null, ""),
+  assignedVendorId: Joi.string().uuid().allow(null, ""),
+}).xor("assignedToId", "assignedVendorId"); // exactly one must be provided, not both
 
 export const updateStatusSchema = Joi.object({
   status: Joi.string()

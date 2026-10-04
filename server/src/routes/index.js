@@ -16,6 +16,7 @@ import announcementRoutes from "../features/announcements/announcement.routes.js
 import documentRoutes from "../features/documents/document.routes.js";
 import paymentRoutes from "../features/payments/payment.routes.js";
 import expenseRoutes from "../features/expenses/expense.routes.js";
+import vendorRoutes from "../features/vendors/vendor.routes.js";
 
 const v1Router = express.Router();
 
@@ -29,5 +30,6 @@ v1Router.use("/announcements", announcementRoutes);
 v1Router.use("/documents", documentRoutes);
 v1Router.use("/payments", paymentRoutes);
 v1Router.use("/expenses", expenseRoutes);
+v1Router.use("/vendors", vendorRoutes);
 
 export default v1Router;

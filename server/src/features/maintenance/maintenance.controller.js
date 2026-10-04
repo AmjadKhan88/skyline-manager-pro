@@ -13,6 +13,7 @@ import {
   Building,
   User,
   UserProfile,
+  Vendor,
 } from "../../models/index.js";
 import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/utils/ApiResponse.js";
@@ -119,6 +120,12 @@ export const getAllRequests = asyncHandler(async (req, res) => {
         attributes: STAFF_ATTRS,
         required: false,
       },
+      {
+        model: Vendor,
+        as: "assignedVendor",
+        attributes: ["id", "name", "companyName", "phone"],
+        required: false,
+      },
     ],
   });
 
@@ -149,6 +156,12 @@ export const getRequestById = asyncHandler(async (req, res) => {
         attributes: STAFF_ATTRS,
         required: false,
       },
+      {
+        model: Vendor,
+        as: "assignedVendor",
+        attributes: ["id", "name", "companyName", "phone"],
+        required: false,
+      },
     ],
   });
 
@@ -163,24 +176,40 @@ export const getRequestById = asyncHandler(async (req, res) => {
 });
 
 // ─── ASSIGN (owner/manager assigns to a staff member) ──────────────────────────
+// ─── ASSIGN (owner/manager assigns to a staff member OR an outside vendor) ────
 export const assignRequest = asyncHandler(async (req, res) => {
-  const { assignedToId } = req.body;
+  const { assignedToId, assignedVendorId } = req.body;
 
   const request = await MaintenanceRequest.findOne({
     where: { id: req.params.id, ownerId: req.scopedOwnerId },
   });
   if (!request) return ApiResponse.error(res, 404, "Request not found.");
 
-  const assignee = await User.findOne({
-    where: {
-      id: assignedToId,
-      ownerId: req.scopedOwnerId,
-      role: { [Op.in]: ["manager", "employee"] },
-    },
-  });
-  if (!assignee) return ApiResponse.error(res, 400, "Invalid assignee.");
+  if (assignedVendorId) {
+    const vendor = await Vendor.findOne({
+      where: {
+        id: assignedVendorId,
+        ownerId: req.scopedOwnerId,
+        isActive: true,
+      },
+    });
+    if (!vendor)
+      return ApiResponse.error(res, 400, "Invalid or inactive vendor.");
+    request.assignedVendorId = assignedVendorId;
+    request.assignedToId = null; // mutually exclusive — assigning to a vendor clears any staff assignment
+  } else {
+    const assignee = await User.findOne({
+      where: {
+        id: assignedToId,
+        ownerId: req.scopedOwnerId,
+        role: { [Op.in]: ["manager", "employee"] },
+      },
+    });
+    if (!assignee) return ApiResponse.error(res, 400, "Invalid assignee.");
+    request.assignedToId = assignedToId;
+    request.assignedVendorId = null;
+  }
 
-  request.assignedToId = assignedToId;
   if (request.status === "open") request.status = "in-progress";
   await request.save();
 

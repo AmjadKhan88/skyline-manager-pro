@@ -13,6 +13,7 @@ const MaintenanceRequest = sequelize.define(
     buildingId: { type: DataTypes.UUID, allowNull: false },
     reportedById: { type: DataTypes.UUID, allowNull: false },
     assignedToId: { type: DataTypes.UUID, allowNull: true },
+    assignedVendorId: { type: DataTypes.UUID, allowNull: true },
     unitNumber: { type: DataTypes.STRING(50), allowNull: true },
     title: { type: DataTypes.STRING(200), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },

@@ -40,6 +40,7 @@ import PaymentAccount from "./PaymentAccount.model.js";
 import PaymentSubmission from "./PaymentSubmission.model.js";
 
 import Expense from "./Expense.model.js";
+import Vendor from "./Vendor.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
@@ -217,6 +218,19 @@ Expense.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
 User.hasMany(Expense, { foreignKey: "recordedById", as: "recordedExpenses" });
 Expense.belongsTo(User, { foreignKey: "recordedById", as: "recordedBy" });
 
+// Vendors
+User.hasMany(Vendor, { foreignKey: "ownerId", as: "vendors" });
+Vendor.belongsTo(User, { foreignKey: "ownerId", as: "owner" });
+
+Vendor.hasMany(MaintenanceRequest, {
+  foreignKey: "assignedVendorId",
+  as: "assignedRequests",
+});
+MaintenanceRequest.belongsTo(Vendor, {
+  foreignKey: "assignedVendorId",
+  as: "assignedVendor",
+});
+
 export {
   User,
   OwnerProfile,
@@ -226,4 +240,5 @@ export {
   Invitation,
   Document,
   Expense,
+  Vendor,
 };
