@@ -41,6 +41,7 @@ import PaymentSubmission from "./PaymentSubmission.model.js";
 
 import Expense from "./Expense.model.js";
 import Vendor from "./Vendor.model.js";
+import Inspection from "./Inspection.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
@@ -231,6 +232,19 @@ MaintenanceRequest.belongsTo(Vendor, {
   as: "assignedVendor",
 });
 
+// Inspections
+Tenancy.hasMany(Inspection, { foreignKey: "tenancyId", as: "inspections" });
+Inspection.belongsTo(Tenancy, { foreignKey: "tenancyId", as: "tenancy" });
+
+Building.hasMany(Inspection, { foreignKey: "buildingId", as: "inspections" });
+Inspection.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
+
+User.hasMany(Inspection, {
+  foreignKey: "inspectedById",
+  as: "conductedInspections",
+});
+Inspection.belongsTo(User, { foreignKey: "inspectedById", as: "inspectedBy" });
+
 export {
   User,
   OwnerProfile,
@@ -241,4 +255,5 @@ export {
   Document,
   Expense,
   Vendor,
+  Inspection,
 };
