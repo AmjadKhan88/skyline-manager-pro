@@ -42,6 +42,7 @@ import PaymentSubmission from "./PaymentSubmission.model.js";
 import Expense from "./Expense.model.js";
 import Vendor from "./Vendor.model.js";
 import Inspection from "./Inspection.model.js";
+import LeaseSignature from "./LeaseSignature.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
@@ -245,6 +246,13 @@ User.hasMany(Inspection, {
 });
 Inspection.belongsTo(User, { foreignKey: "inspectedById", as: "inspectedBy" });
 
+// Lease Signatures
+Tenancy.hasMany(LeaseSignature, { foreignKey: "tenancyId", as: "signatures" });
+LeaseSignature.belongsTo(Tenancy, { foreignKey: "tenancyId", as: "tenancy" });
+
+User.hasMany(LeaseSignature, { foreignKey: "signerId", as: "signedLeases" });
+LeaseSignature.belongsTo(User, { foreignKey: "signerId", as: "signer" });
+
 export {
   User,
   OwnerProfile,
@@ -256,4 +264,5 @@ export {
   Expense,
   Vendor,
   Inspection,
+  LeaseSignature,
 };

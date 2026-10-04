@@ -18,6 +18,7 @@ import paymentRoutes from "../features/payments/payment.routes.js";
 import expenseRoutes from "../features/expenses/expense.routes.js";
 import vendorRoutes from "../features/vendors/vendor.routes.js";
 import inspectionRoutes from "../features/inspections/inspection.routes.js";
+import signatureRoutes from "../features/signatures/signature.routes.js";
 
 const v1Router = express.Router();
 
@@ -33,5 +34,6 @@ v1Router.use("/payments", paymentRoutes);
 v1Router.use("/expenses", expenseRoutes);
 v1Router.use("/vendors", vendorRoutes);
 v1Router.use("/inspections", inspectionRoutes);
+v1Router.use("/signatures", signatureRoutes);
 
 export default v1Router;

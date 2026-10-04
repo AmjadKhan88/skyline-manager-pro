@@ -35,6 +35,7 @@ import PaymentSubmission from "./PaymentSubmission.model.js";
 import Expense from "./Expense.model.js";
 import Vendor from "./Vendor.model.js";
 import Inspection from "./Inspection.model.js";
+import LeaseSignature from "./LeaseSignature.model.js";
 // Re-export for convenient destructured imports
 export {
   User,
@@ -51,4 +52,5 @@ export {
   Expense,
   Vendor,
   Inspection,
+  LeaseSignature,
 };
