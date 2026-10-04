@@ -355,3 +355,30 @@ export interface Vendor {
   notes?: string | null;
   isActive: boolean;
 }
+
+export type InspectionType = 'move_in' | 'move_out';
+export type InspectionStatus = 'draft' | 'completed';
+export type ItemCondition = 'excellent' | 'good' | 'fair' | 'poor' | 'damaged' | 'not_applicable';
+
+export interface InspectionItem {
+  area: string;
+  item: string;
+  condition: ItemCondition;
+  notes?: string;
+  photoUrl?: string;
+}
+
+export interface Inspection {
+  id: string;
+  tenancyId: string;
+  type: InspectionType;
+  inspectionDate: string;
+  items: InspectionItem[];
+  generalNotes?: string | null;
+  status: InspectionStatus;
+  tenantAcknowledged: boolean;
+  tenantAcknowledgedAt?: string | null;
+  building: { id: string; name: string };
+  inspectedBy: { id: string; name: string; role: string };
+  tenancy: { id: string; unitNumber: string; tenantId: string };
+}

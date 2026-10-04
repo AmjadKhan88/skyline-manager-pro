@@ -19,6 +19,7 @@ import {
   CreditCard,
   Landmark,
   Receipt,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import api from "../../lib/api";
@@ -48,6 +49,11 @@ const NAV_CONFIG = {
           to: "/owner/payment-accounts",
         },
         { label: "Expenses", icon: Receipt, to: "/owner/expenses" },
+        {
+          label: "Inspections",
+          icon: ClipboardCheck,
+          to: "/owner/inspections",
+        },
       ],
     },
     {
@@ -79,6 +85,11 @@ const NAV_CONFIG = {
         { label: "Documents", icon: FolderOpen, to: "/manager/documents" },
         { label: "Payments", icon: CreditCard, to: "/manager/payments" },
         { label: "Expenses", icon: Receipt, to: "/manager/expenses" },
+        {
+          label: "Inspections",
+          icon: ClipboardCheck,
+          to: "/manager/inspections",
+        },
       ],
     },
   ],
@@ -115,6 +126,11 @@ const NAV_CONFIG = {
         },
         { label: "Documents", icon: FolderOpen, to: "/tenant/documents" },
         { label: "Payments", icon: CreditCard, to: "/tenant/payments" },
+        {
+          label: "Inspections",
+          icon: ClipboardCheck,
+          to: "/tenant/inspections",
+        },
       ],
     },
   ],
