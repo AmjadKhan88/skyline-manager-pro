@@ -66,7 +66,9 @@ server/
 │   │   ├── documents/ (controller, routes, validator) — lease/ID/inspection storage, see section 6f
 │   │   ├── payments/ (paymentAccount.controller, paymentSubmission.controller, routes, validator) — manual payment system, see section 6g
 │   │   ├── expenses/ (controller, routes, validator) — expense tracking, see section 6h
-│   │   └── vendors/ (controller, routes, validator) — outside contractors, see section 6i
+│   │   ├── vendors/ (controller, routes, validator) — outside contractors, see section 6i
+│   │   ├── inspections/ (controller, routes, validator) — move-in/move-out checklists, see section 6j
+│   │   └── signatures/ (controller, routes, validator) — lease e-signature, see section 6k
 │   └── routes/index.js  (mounts all feature routers under /api/v1)
 └── server.js
 ```

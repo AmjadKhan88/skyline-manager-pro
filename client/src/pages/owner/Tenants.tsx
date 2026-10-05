@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
 import {
@@ -11,8 +11,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2 as TrashIcon,
+  PenLine,
+  CheckCircle2,
 } from "lucide-react";
 import { cn, getErrorMessage } from "../../lib/utils";
+import SignaturePad, {
+  SignaturePadHandle,
+} from "../../components/SignaturePad";
+import { LeaseSignature } from "../../types/index";
 
 export default function Tenants() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -25,6 +31,16 @@ export default function Tenants() {
   const [editingTenant, setEditingTenant] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const [signaturesByTenancy, setSignaturesByTenancy] = useState<
+    Record<string, { signatures: LeaseSignature[]; isFullyExecuted: boolean }>
+  >({});
+  const [signModalTenancy, setSignModalTenancy] = useState<string | null>(null);
+  const [typedName, setTypedName] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const padRef = useRef<SignaturePadHandle>(null);
+
   const LIMIT = 10;
 
   const [formData, setFormData] = useState({
@@ -47,11 +63,29 @@ export default function Tenants() {
       const { data } = await api.get("/tenants", { params });
       setTenants(data.data || []);
       setTotal(data.pagination?.total ?? data.data?.length ?? 0);
+      const tenancyIds = (data.data || [])
+        .map((t: any) => t.tenancies?.[0]?.id)
+        .filter(Boolean);
+      fetchSignatureStatus(tenancyIds);
     } catch {
       toast.error("Failed to load tenants");
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSignatureStatus = async (tenancyIds: string[]) => {
+    const results = await Promise.all(
+      tenancyIds.map((id) =>
+        api
+          .get(`/signatures/tenancy/${id}`)
+          .then((res) => [id, res.data.data] as const),
+      ),
+    );
+    setSignaturesByTenancy((prev) => ({
+      ...prev,
+      ...Object.fromEntries(results),
+    }));
   };
 
   useEffect(() => {
@@ -154,6 +188,38 @@ export default function Tenants() {
     }
   };
 
+  const handleSign = async () => {
+    if (!signModalTenancy || !agreed || !typedName.trim()) {
+      toast.error("Please type your name and agree to the terms.");
+      return;
+    }
+    const file = await padRef.current?.getSignatureFile();
+    if (!file) {
+      toast.error("Please draw a signature first.");
+      return;
+    }
+    setSigning(true);
+    try {
+      const fd = new FormData();
+      fd.append("tenancyId", signModalTenancy);
+      fd.append("typedName", typedName);
+      fd.append("agreed", "true");
+      fd.append("signature", file);
+      await api.post("/signatures", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Lease countersigned");
+      setSignModalTenancy(null);
+      setTypedName("");
+      setAgreed(false);
+      fetchSignatureStatus(Object.keys(signaturesByTenancy));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setSigning(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
@@ -216,6 +282,9 @@ export default function Tenants() {
                   </th>
                   <th className="p-4 font-medium text-gray-500 dark:text-gray-400">
                     Payment Status
+                  </th>
+                  <th className="p-4 font-medium text-gray-500 dark:text-gray-400">
+                    Signature
                   </th>
                   <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-right">
                     Actions
@@ -299,6 +368,44 @@ export default function Tenants() {
                           {paymentStatus.toUpperCase()}
                         </button>
                       </td>
+                      <td className="p-4">
+                        {(() => {
+                          if (!lease)
+                            return (
+                              <span className="text-xs text-gray-400">
+                                No lease
+                              </span>
+                            );
+                          const sigInfo = signaturesByTenancy[lease.id];
+                          if (sigInfo?.isFullyExecuted) {
+                            return (
+                              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" />{" "}
+                                Executed
+                              </span>
+                            );
+                          }
+                          const staffSigned = sigInfo?.signatures.some(
+                            (s) =>
+                              s.signerRole === "owner" ||
+                              s.signerRole === "manager",
+                          );
+                          if (staffSigned)
+                            return (
+                              <span className="text-xs text-amber-600 dark:text-amber-400">
+                                Awaiting tenant
+                              </span>
+                            );
+                          return (
+                            <button
+                              onClick={() => setSignModalTenancy(lease.id)}
+                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              <PenLine className="w-3.5 h-3.5" /> Countersign
+                            </button>
+                          );
+                        })()}
+                      </td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-1.5">
                           <button
@@ -320,7 +427,7 @@ export default function Tenants() {
                 })}
                 {tenants.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-10 text-center text-gray-400">
+                    <td colSpan={6} className="p-10 text-center text-gray-400">
                       {search
                         ? "No tenants match your search."
                         : "No tenants added yet."}
@@ -605,6 +712,65 @@ export default function Tenants() {
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Countersign Modal */}
+      {signModalTenancy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSignModalTenancy(null)}
+          />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                style={{ fontFamily: "var(--font-display)" }}
+                className="text-lg font-bold text-gray-900 dark:text-white"
+              >
+                Countersign Lease
+              </h2>
+              <button onClick={() => setSignModalTenancy(null)}>
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                  Full Name
+                </label>
+                <input
+                  value={typedName}
+                  onChange={(e) => setTypedName(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Type your full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                  Signature
+                </label>
+                <SignaturePad ref={padRef} />
+              </div>
+              <label className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5"
+                />
+                I confirm this is my legal signature and I agree to the terms of
+                this lease.
+              </label>
+              <button
+                onClick={handleSign}
+                disabled={signing}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-sm transition-colors disabled:opacity-60"
+              >
+                {signing ? "Signing..." : "Countersign Lease"}
               </button>
             </div>
           </div>

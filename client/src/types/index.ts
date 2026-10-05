@@ -382,3 +382,15 @@ export interface Inspection {
   inspectedBy: { id: string; name: string; role: string };
   tenancy: { id: string; unitNumber: string; tenantId: string };
 }
+
+export type SignerRole = 'tenant' | 'owner' | 'manager';
+
+export interface LeaseSignature {
+  id: string;
+  tenancyId: string;
+  signerRole: SignerRole;
+  signatureImageUrl: string;
+  typedName: string;
+  agreedAt: string;
+  signer: { id: string; name: string; role: string };
+}
