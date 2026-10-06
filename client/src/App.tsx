@@ -45,7 +45,6 @@ const OwnerMaintenance = lazy(() => import("./pages/owner/Maintenance"));
 const ManagerMaintenance = lazy(() => import("./pages/manager/Maintenance"));
 const EmployeeMaintenance = lazy(() => import("./pages/employee/Maintenance"));
 const TenantMaintenance = lazy(() => import("./pages/tenant/Maintenance"));
-
 const OwnerAnnouncements = lazy(() => import("./pages/owner/Announcements"));
 const ManagerAnnouncements = lazy(
   () => import("./pages/manager/Announcements"),
@@ -54,25 +53,21 @@ const EmployeeAnnouncements = lazy(
   () => import("./pages/employee/Announcements"),
 );
 const TenantAnnouncements = lazy(() => import("./pages/tenant/Announcements"));
-
 const OwnerDocuments = lazy(() => import("./pages/owner/Documents"));
 const ManagerDocuments = lazy(() => import("./pages/manager/Documents"));
 const TenantDocuments = lazy(() => import("./pages/tenant/Documents"));
-
 const OwnerPaymentAccounts = lazy(
   () => import("./pages/owner/PaymentAccounts"),
 );
 const OwnerPayments = lazy(() => import("./pages/owner/Payments"));
 const ManagerPayments = lazy(() => import("./pages/manager/Payments"));
 const TenantPayments = lazy(() => import("./pages/tenant/Payments"));
-
 const OwnerExpenses = lazy(() => import("./pages/owner/Expenses"));
 const ManagerExpenses = lazy(() => import("./pages/manager/Expenses"));
 
 const OwnerInspections = lazy(() => import("./pages/owner/Inspections"));
 const ManagerInspections = lazy(() => import("./pages/manager/Inspections"));
 const TenantInspections = lazy(() => import("./pages/tenant/Inspections"));
-
 const OwnerRentRoll = lazy(() => import("./pages/owner/RentRoll"));
 const ManagerRentRoll = lazy(() => import("./pages/manager/RentRoll"));
 

@@ -2,7 +2,7 @@
 
 > **For a future Claude session:** Read this file first, in full, before doing anything else on this project. It contains the full history, architecture, conventions, and known-pending items. Anthropic's cross-chat memory is not enabled for this user, so this file is the actual persistence layer between sessions — keep it updated as the source of truth.
 
-**Last updated:** during active build session, covering everything from initial cleanup through the owner dashboard redesign + sidebar fixes.
+**Last updated:** during active build session, through the Rent Roll/Billing system (6l). **Not a final state** — more features are actively being added; keep appending sections rather than treating this as a closed roadmap.
 
 ---
 
@@ -49,7 +49,7 @@ server/
 │   ├── models/                    ← stays centralized (Sequelize needs this for associations)
 │   │   ├── User.model.js, OwnerProfile.model.js, UserProfile.model.js,
 │   │   │   Building.model.js, Tenancy.model.js, Invitation.model.js,
-│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, PaymentAccount.model.js, PaymentSubmission.model.js, Expense.model.js, Vendor.model.js, Inspection.model.js, LeaseSignature.model.js, associations.js, index.js
+│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, PaymentAccount.model.js, PaymentSubmission.model.js, Expense.model.js, Vendor.model.js, Inspection.model.js, LeaseSignature.model.js, RentCharge.model.js, associations.js, index.js
 │   ├── shared/
 │   │   ├── middlewares/  (authenticate, authorize, tenantScope, validate, errorHandler, rateLimiter, multer)
 │   │   ├── utils/         (ApiResponse, asyncHandler)
@@ -68,7 +68,10 @@ server/
 │   │   ├── expenses/ (controller, routes, validator) — expense tracking, see section 6h
 │   │   ├── vendors/ (controller, routes, validator) — outside contractors, see section 6i
 │   │   ├── inspections/ (controller, routes, validator) — move-in/move-out checklists, see section 6j
-│   │   └── signatures/ (controller, routes, validator) — lease e-signature, see section 6k
+│   │   ├── signatures/ (controller, routes, validator) — lease e-signature, see section 6k
+│   │   └── billing/ (controller, service, validator, routes) — rent roll / recurring billing, see section 6l
+│   ├── jobs/
+│   │   └── billingCron.js — daily node-cron job, see section 6l
 │   └── routes/index.js  (mounts all feature routers under /api/v1)
 └── server.js
 ```
@@ -259,7 +262,20 @@ The last of the three smaller "remaining features." Deliberately **not** a DocuS
 - **New reusable frontend component**: `components/SignaturePad.tsx` — a plain `<canvas>` with pointer events (works for both mouse and touch, no external drawing library), exposing `getSignatureFile()` (returns a PNG `File` ready for `FormData`) and `clear()` via `useImperativeHandle`. Used identically in 3 places: `tenant/Lease.tsx` (sign), `owner/Tenants.tsx` and `manager/Tenants.tsx` (countersign).
 - **Wiring lesson applied from 6i**: before writing instructions for `manager/Tenants.tsx`, the file was read first rather than assumed to mirror `owner/Tenants.tsx` — and it turned out to be a much simpler, earlier-built page (no pagination, no payment-status editing, no toast library even imported) that needed a full rewrite rather than patch-style edits. Checking first instead of assuming avoided repeating the exact mistake that caused the `eligibleStaff` bug in Vendor Accounts.
 
-**This closes out the entire originally-researched feature roadmap.** Eight brand-new features built end-to-end across this session: Maintenance, Announcements, Documents, Manual Payments, Expense Tracking, Vendor Accounts, Inspection Checklists, and Lease E-Signature — every one real, role-scoped, migration-backed, and integrated with what already existed rather than sitting disconnected. What remains in the pending list below is now entirely structural cleanup (layout/table consolidation, audit-log table) plus smaller polish items, not missing functionality.
+**This closes out the entire originally-researched feature roadmap as it stood at the time.** Eight brand-new features built end-to-end across this session so far: Maintenance, Announcements, Documents, Manual Payments, Expense Tracking, Vendor Accounts, Inspection Checklists, and Lease E-Signature — every one real, role-scoped, migration-backed, and integrated with what already existed rather than sitting disconnected. **The user then identified a ninth, architecturally significant gap (the Rent Roll/Billing system, see 6l) after a fresh round of research — more features are actively being added beyond this point, so treat this as a running log, not a finished list.**
+
+## 6l. Rent Roll / Recurring Billing System — ninth feature, and the first that modifies existing models rather than only adding new ones
+
+Identified via a fresh research pass specifically asking "what's still missing for *full* building/apartment management" after the original 8-feature roadmap was done. Universal finding across every source (Buildium, Baselane, Rent Manager, DoorLoop, Landlord Studio): automated recurring rent invoices, late fees, and a real tenant ledger are the single most consistently "must-have" feature in the category — more so than anything built in 6d-6k, including the manual payment system itself.
+
+**The architectural gap this exposed**: `Tenancy.paymentStatus` was always a single mutable field representing only the *current* state — there was no month-by-month record of what was charged, when, and what was paid against it. This is also *why* a real historical revenue trend chart was correctly avoided earlier in the session (6/Step 4) rather than fabricated — the right fix was always a real ledger, not "wait for data to exist."
+
+- **`Tenancy` gained 4 new billing-config fields** via `add-billing-config-to-tenancies` (an **ALTER**, not a new table — the first migration in this project that modifies an existing core model): `billingDueDay` (1-28), `gracePeriodDays` (default 5), `lateFeeType` (none/fixed/percent), `lateFeeValue`. Per-lease, not a global setting, since real leases can have different terms.
+- **New model**: `RentCharge.model.js` (migration `create-rent-charges`) — one row per tenancy per billing month: `periodMonth`, `dueDate`, `baseAmount`, `appliedLateFee`, `amountPaid`, `status` (pending/partial/paid/overdue/waived), `paidAt`. Unique `(tenancyId, periodMonth)` index — the real safety net preventing duplicate charges, not just the idempotency logic in the generator.
+- **New feature folder + service layer**: `features/billing/` has a `billing.service.js` separate from the controller — holds `generateMissingCharges()` (creates this month's charge for every active tenancy that doesn't have one, idempotent via the unique index), `applyLateFees()` (stamps the configured fee exactly once on anything past its grace period), and `recomputeChargeStatus()` (the one function that must be called after any payment touches a charge — also syncs `Tenancy.paymentStatus` to match, so every existing page reading that single field keeps working unchanged). Separating this into a service (not just controller functions) was deliberate: the cron job and the controller's manual-trigger endpoint both call the exact same functions, so there's no duplicate logic between "automatic" and "owner clicked a button" paths.
+- **First scheduled job in the project**: `node-cron` (new dependency) runs `jobs/billingCron.js` daily at 02:00, calling the same two service functions the manual `POST /billing/run-cycle` endpoint does. Started from `server.js` right after `connectDB()` succeeds.
+- **`PaymentSubmission` (6g) now links to a specific `RentCharge`** via a new nullable `rentChargeId` column (nullable specifically for backward compatibility with submissions made before this feature existed). `reviewSubmission`'s approval branch now has two paths: if `rentChargeId` is set, add the amount to that charge and call `recomputeChargeStatus()`; if not (an old submission), fall back to the original direct `Tenancy.paymentStatus = 'paid'` behavior. The tenant's payment flow (`tenant/Payments.tsx`) now requires picking a specific unpaid/overdue charge from a dropdown (auto-filling the exact amount owed, including any late fee) instead of freely typing an amount.
+- **Frontend**: `owner/RentRoll.tsx` (full ledger table, status filter, a "Run Billing Cycle" manual-trigger button for testing/catch-up, waive action) and `manager/RentRoll.tsx` (identical minus the owner-only run-cycle button — `authorize("owner")` on that specific route). Billing config (due day / grace period / late fee) is edited via a small quick-edit modal added to the existing `owner/Tenants.tsx` table, not a new page — reuses the row-per-tenant structure already there.
 
 ## 7. Known-pending / not yet built
 
