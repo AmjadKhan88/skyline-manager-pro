@@ -73,6 +73,9 @@ const OwnerInspections = lazy(() => import("./pages/owner/Inspections"));
 const ManagerInspections = lazy(() => import("./pages/manager/Inspections"));
 const TenantInspections = lazy(() => import("./pages/tenant/Inspections"));
 
+const OwnerRentRoll = lazy(() => import("./pages/owner/RentRoll"));
+const ManagerRentRoll = lazy(() => import("./pages/manager/RentRoll"));
+
 export default function App() {
   const { user, loading } = useGlobal();
 
@@ -114,6 +117,7 @@ export default function App() {
             <Route path="payments" element={<OwnerPayments />} />
             <Route path="expenses" element={<OwnerExpenses />} />
             <Route path="inspections" element={<OwnerInspections />} />
+            <Route path="rent-roll" element={<OwnerRentRoll />} />
             <Route path="settings" element={<OwnerSettings />} />
           </Route>
 
@@ -137,6 +141,7 @@ export default function App() {
             <Route path="payments" element={<ManagerPayments />} />
             <Route path="expenses" element={<ManagerExpenses />} />
             <Route path="inspections" element={<ManagerInspections />} />
+            <Route path="rent-roll" element={<ManagerRentRoll />} />
           </Route>
 
           {/* ── Employee ──────────────────────────────────────────── */}

@@ -13,6 +13,7 @@ import {
   Trash2 as TrashIcon,
   PenLine,
   CheckCircle2,
+  Receipt,
 } from "lucide-react";
 import { cn, getErrorMessage } from "../../lib/utils";
 import SignaturePad, {
@@ -40,6 +41,14 @@ export default function Tenants() {
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
+
+  const [billingTarget, setBillingTarget] = useState<any>(null);
+  const [billingForm, setBillingForm] = useState({
+    billingDueDay: 1,
+    gracePeriodDays: 5,
+    lateFeeType: "none",
+    lateFeeValue: 0,
+  });
 
   const LIMIT = 10;
 
@@ -217,6 +226,20 @@ export default function Tenants() {
       toast.error(getErrorMessage(err));
     } finally {
       setSigning(false);
+    }
+  };
+
+  const handleSaveBilling = async () => {
+    if (!billingTarget?.tenancies?.[0]) return;
+    try {
+      await api.put(
+        `/billing/tenancy/${billingTarget.tenancies[0].id}`,
+        billingForm,
+      );
+      toast.success("Billing settings saved");
+      setBillingTarget(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -409,11 +432,28 @@ export default function Tenants() {
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-1.5">
                           <button
+                            onClick={() => {
+                              setBillingTarget(tenant);
+                              const lease = tenant.tenancies?.[0];
+                              setBillingForm({
+                                billingDueDay: lease?.billingDueDay ?? 1,
+                                gracePeriodDays: lease?.gracePeriodDays ?? 5,
+                                lateFeeType: lease?.lateFeeType ?? "none",
+                                lateFeeValue: lease?.lateFeeValue ?? 0,
+                              });
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+                            title="Billing settings"
+                          >
+                            <Receipt size={15} />
+                          </button>
+                          <button
                             onClick={() => handleOpenModal(tenant)}
                             className="p-1.5 text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
                           >
                             <Edit2 size={15} />
                           </button>
+
                           <button
                             onClick={() => setDeleteId(tenant.id)}
                             className="p-1.5 text-gray-500 hover:text-red-600 dark:hover:text-red-400 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
@@ -772,6 +812,112 @@ export default function Tenants() {
               >
                 {signing ? "Signing..." : "Countersign Lease"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {billingTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setBillingTarget(null)}
+          />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+              Billing Settings — {billingTarget.name}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                  Rent Due Day of Month
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={28}
+                  value={billingForm.billingDueDay}
+                  onChange={(e) =>
+                    setBillingForm({
+                      ...billingForm,
+                      billingDueDay: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                  Grace Period (days)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={billingForm.gracePeriodDays}
+                  onChange={(e) =>
+                    setBillingForm({
+                      ...billingForm,
+                      gracePeriodDays: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                  Late Fee Type
+                </label>
+                <select
+                  value={billingForm.lateFeeType}
+                  onChange={(e) =>
+                    setBillingForm({
+                      ...billingForm,
+                      lateFeeType: e.target.value,
+                    })
+                  }
+                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="none">No late fee</option>
+                  <option value="fixed">Fixed amount</option>
+                  <option value="percent">Percentage of rent</option>
+                </select>
+              </div>
+              {billingForm.lateFeeType !== "none" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    {billingForm.lateFeeType === "percent"
+                      ? "Percent (%)"
+                      : "Amount ($)"}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={billingForm.lateFeeValue}
+                    onChange={(e) =>
+                      setBillingForm({
+                        ...billingForm,
+                        lateFeeValue: parseFloat(e.target.value),
+                      })
+                    }
+                    className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setBillingTarget(null)}
+                  className="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveBilling}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </div>

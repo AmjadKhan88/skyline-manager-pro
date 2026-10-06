@@ -10,7 +10,11 @@ import {
 } from "lucide-react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
-import { PaymentAccount, PaymentSubmission } from "../../types/index";
+import {
+  PaymentAccount,
+  PaymentSubmission,
+  RentCharge,
+} from "../../types/index";
 import { METHOD_CONFIG, STATUS_CONFIG } from "../../lib/paymentStyles";
 import { cn, getErrorMessage, timeAgo } from "../../lib/utils";
 
@@ -24,6 +28,10 @@ export default function TenantPayments() {
   const [selectedAccount, setSelectedAccount] = useState<PaymentAccount | null>(
     null,
   );
+
+  const [unpaidCharges, setUnpaidCharges] = useState<RentCharge[]>([]);
+  const [selectedCharge, setSelectedCharge] = useState<RentCharge | null>(null);
+
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -40,6 +48,16 @@ export default function TenantPayments() {
         api.get("/payments/submissions"),
         api.get("/payments/accounts"),
         api.get("/tenants/my-lease"),
+      ]);
+      const chargesRes = await api.get("/billing/rent-roll", {
+        params: { status: "pending" },
+      });
+      const overdueRes = await api.get("/billing/rent-roll", {
+        params: { status: "overdue" },
+      });
+      setUnpaidCharges([
+        ...(chargesRes.data.data || []),
+        ...(overdueRes.data.data || []),
       ]);
       setSubmissions(subRes.data.data || []);
       setAccounts(accRes.data.data.accounts || []);
@@ -90,6 +108,10 @@ export default function TenantPayments() {
       toast.error("Please upload a screenshot of your payment.");
       return;
     }
+    if (!selectedCharge) {
+      toast.error("Please select which charge you are paying.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -97,6 +119,7 @@ export default function TenantPayments() {
       fd.append("tenancyId", lease.id);
       fd.append("paymentAccountId", selectedAccount.id);
       fd.append("amount", form.amount);
+      fd.append("rentChargeId", selectedCharge.id);
       if (form.periodMonth) fd.append("periodMonth", form.periodMonth);
       if (form.transactionReference)
         fd.append("transactionReference", form.transactionReference);
@@ -362,17 +385,45 @@ export default function TenantPayments() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                      Amount Paid *
+                      Which charge are you paying? *
                     </label>
-                    <input
+                    <select
                       required
-                      type="number"
-                      value={form.amount}
-                      onChange={(e) =>
-                        setForm({ ...form, amount: e.target.value })
-                      }
+                      value={selectedCharge?.id || ""}
+                      onChange={(e) => {
+                        const charge =
+                          unpaidCharges.find((c) => c.id === e.target.value) ||
+                          null;
+                        setSelectedCharge(charge);
+                        if (charge)
+                          setForm({
+                            ...form,
+                            amount: String(
+                              Number(charge.baseAmount) +
+                                Number(charge.appliedLateFee) -
+                                Number(charge.amountPaid),
+                            ),
+                          });
+                      }}
                       className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                    >
+                      <option value="">-- Select a charge --</option>
+                      {unpaidCharges.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {new Date(c.periodMonth).toLocaleDateString(
+                            undefined,
+                            { month: "long", year: "numeric" },
+                          )}{" "}
+                          — $
+                          {(
+                            Number(c.baseAmount) +
+                            Number(c.appliedLateFee) -
+                            Number(c.amountPaid)
+                          ).toLocaleString()}{" "}
+                          due
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">

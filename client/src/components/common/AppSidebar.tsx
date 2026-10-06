@@ -54,6 +54,7 @@ const NAV_CONFIG = {
           icon: ClipboardCheck,
           to: "/owner/inspections",
         },
+        { label: "Rent Roll", icon: Receipt, to: "/owner/rent-roll" },
       ],
     },
     {
@@ -90,6 +91,7 @@ const NAV_CONFIG = {
           icon: ClipboardCheck,
           to: "/manager/inspections",
         },
+        { label: "Rent Roll", icon: Receipt, to: "/manager/rent-roll" },
       ],
     },
   ],

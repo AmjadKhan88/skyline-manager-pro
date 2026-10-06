@@ -394,3 +394,20 @@ export interface LeaseSignature {
   agreedAt: string;
   signer: { id: string; name: string; role: string };
 }
+
+export type ChargeStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'waived';
+
+export interface RentCharge {
+  id: string;
+  tenancyId: string;
+  periodMonth: string;
+  dueDate: string;
+  baseAmount: number;
+  appliedLateFee: number;
+  amountPaid: number;
+  status: ChargeStatus;
+  paidAt?: string | null;
+  notes?: string | null;
+  building: { id: string; name: string };
+  tenancy: { id: string; unitNumber: string; tenantId: string; tenant?: { id: string; name: string; email: string } };
+}
