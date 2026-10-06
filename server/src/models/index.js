@@ -36,6 +36,7 @@ import Expense from "./Expense.model.js";
 import Vendor from "./Vendor.model.js";
 import Inspection from "./Inspection.model.js";
 import LeaseSignature from "./LeaseSignature.model.js";
+import RentCharge from "./RentCharge.model.js";
 // Re-export for convenient destructured imports
 export {
   User,
@@ -53,4 +54,5 @@ export {
   Vendor,
   Inspection,
   LeaseSignature,
+  RentCharge,
 };

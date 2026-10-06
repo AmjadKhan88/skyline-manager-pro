@@ -43,6 +43,7 @@ import Expense from "./Expense.model.js";
 import Vendor from "./Vendor.model.js";
 import Inspection from "./Inspection.model.js";
 import LeaseSignature from "./LeaseSignature.model.js";
+import RentCharge from "./RentCharge.model.js";
 
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
@@ -253,6 +254,22 @@ LeaseSignature.belongsTo(Tenancy, { foreignKey: "tenancyId", as: "tenancy" });
 User.hasMany(LeaseSignature, { foreignKey: "signerId", as: "signedLeases" });
 LeaseSignature.belongsTo(User, { foreignKey: "signerId", as: "signer" });
 
+// Rent Charges (the rent roll)
+Tenancy.hasMany(RentCharge, { foreignKey: "tenancyId", as: "charges" });
+RentCharge.belongsTo(Tenancy, { foreignKey: "tenancyId", as: "tenancy" });
+
+Building.hasMany(RentCharge, { foreignKey: "buildingId", as: "rentCharges" });
+RentCharge.belongsTo(Building, { foreignKey: "buildingId", as: "building" });
+
+RentCharge.hasMany(PaymentSubmission, {
+  foreignKey: "rentChargeId",
+  as: "submissions",
+});
+PaymentSubmission.belongsTo(RentCharge, {
+  foreignKey: "rentChargeId",
+  as: "rentCharge",
+});
+
 export {
   User,
   OwnerProfile,
@@ -265,4 +282,5 @@ export {
   Vendor,
   Inspection,
   LeaseSignature,
+  RentCharge,
 };

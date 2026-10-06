@@ -33,7 +33,7 @@ import compression from "compression";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import passport from "passport";
-
+import { startBillingCron } from "./src/jobs/billingCron.js";
 // Configs
 import "./src/config/passport.js";
 import { sequelize, connectDB } from "./src/config/db.js";
@@ -109,6 +109,7 @@ app.use("/api/v1", apiLimiter);
 
 // ─── Database Connection + Sync ───────────────────────────────────────────────
 await connectDB();
+await startBillingCron();
 
 /**
  * sequelize.sync({ alter: true }) — Safely update table schemas to match models

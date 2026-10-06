@@ -20,6 +20,7 @@ export const updateAccountSchema = createAccountSchema
 
 export const createSubmissionSchema = Joi.object({
   tenancyId: Joi.string().uuid().required(),
+  rentChargeId: Joi.string().uuid().required(),
   paymentAccountId: Joi.string().uuid().required(),
   amount: Joi.number().positive().required(),
   periodMonth: Joi.string().allow("", null),

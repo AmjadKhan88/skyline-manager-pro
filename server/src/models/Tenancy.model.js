@@ -105,6 +105,13 @@ const Tenancy = sequelize.define(
       type: DataTypes.ENUM("paid", "unpaid", "overdue", "partial"),
       defaultValue: "unpaid",
     },
+    billingDueDay: { type: DataTypes.INTEGER, defaultValue: 1 },
+    gracePeriodDays: { type: DataTypes.INTEGER, defaultValue: 5 },
+    lateFeeType: {
+      type: DataTypes.ENUM("none", "fixed", "percent"),
+      defaultValue: "none",
+    },
+    lateFeeValue: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
 
     /**
      * status — lifecycle state of the tenancy itself (not the payment).
@@ -128,12 +135,12 @@ const Tenancy = sequelize.define(
     paranoid: true, // Soft-delete for lease history preservation
 
     indexes: [
-      { fields: ["ownerId"] },    // Scoped tenant list queries
+      { fields: ["ownerId"] }, // Scoped tenant list queries
       { fields: ["buildingId"] }, // All tenants in a building
-      { fields: ["tenantId"] },   // A tenant's own lease lookup
+      { fields: ["tenantId"] }, // A tenant's own lease lookup
       { fields: ["paymentStatus"] },
     ],
-  }
+  },
 );
 
 export default Tenancy;

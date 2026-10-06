@@ -13,9 +13,11 @@ import {
   Tenancy,
   Building,
   User,
+  RentCharge,
 } from "../../models/index.js";
 import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/utils/ApiResponse.js";
+import { recomputeChargeStatus } from "../billing/billing.service.js";
 
 const PERSON_ATTRS = ["id", "name", "email"];
 
@@ -30,6 +32,7 @@ export const createSubmission = asyncHandler(async (req, res) => {
 
   const {
     tenancyId,
+    rentChargeId,
     paymentAccountId,
     amount,
     periodMonth,
@@ -50,6 +53,7 @@ export const createSubmission = asyncHandler(async (req, res) => {
   const submission = await PaymentSubmission.create({
     ownerId: req.scopedOwnerId,
     tenancyId,
+    rentChargeId,
     tenantId: req.user.id,
     paymentAccountId,
     method: account.method,
@@ -160,10 +164,21 @@ export const reviewSubmission = asyncHandler(async (req, res) => {
   await submission.save();
 
   if (status === "approved") {
-    const tenancy = await Tenancy.findByPk(submission.tenancyId);
-    if (tenancy) {
-      tenancy.paymentStatus = "paid";
-      await tenancy.save();
+    if (submission.rentChargeId) {
+      const charge = await RentCharge.findByPk(submission.rentChargeId);
+      if (charge) {
+        charge.amountPaid =
+          Number(charge.amountPaid) + Number(submission.amount);
+        await charge.save();
+        await recomputeChargeStatus(charge.id);
+      }
+    } else {
+      // Backward-compat path for submissions made before RentCharge existed
+      const tenancy = await Tenancy.findByPk(submission.tenancyId);
+      if (tenancy) {
+        tenancy.paymentStatus = "paid";
+        await tenancy.save();
+      }
     }
   }
 

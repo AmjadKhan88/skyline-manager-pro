@@ -49,7 +49,7 @@ server/
 │   ├── models/                    ← stays centralized (Sequelize needs this for associations)
 │   │   ├── User.model.js, OwnerProfile.model.js, UserProfile.model.js,
 │   │   │   Building.model.js, Tenancy.model.js, Invitation.model.js,
-│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, PaymentAccount.model.js, PaymentSubmission.model.js, Expense.model.js, Vendor.model.js, associations.js, index.js
+│   │   │   MaintenanceRequest.model.js, Announcement.model.js, Document.model.js, PaymentAccount.model.js, PaymentSubmission.model.js, Expense.model.js, Vendor.model.js, Inspection.model.js, LeaseSignature.model.js, associations.js, index.js
 │   ├── shared/
 │   │   ├── middlewares/  (authenticate, authorize, tenantScope, validate, errorHandler, rateLimiter, multer)
 │   │   ├── utils/         (ApiResponse, asyncHandler)
@@ -106,18 +106,20 @@ client/src/
 ├── pages/
 │   ├── Home.tsx           ← public landing page + role-select buttons → opens RoleModal
 │   ├── auth/               (VerifyEmail.tsx, ChangePassword.tsx)
-│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements, Documents, PaymentAccounts, Payments, Expenses, Vendors)
-│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements, Documents, Payments, Expenses)
+│   ├── owner/              (Dashboard, Buildings, Managers, Employees, Tenants, Settings, Analytics, Financial, Maintenance, Announcements, Documents, PaymentAccounts, Payments, Expenses, Vendors, Inspections)
+│   ├── manager/            (Dashboard, Building, Employees, Tenants, Maintenance, Announcements, Documents, Payments, Expenses, Inspections)
 │   ├── employee/           (Dashboard, Building, Maintenance, Announcements)
-│   └── tenant/             (Dashboard, Lease, Maintenance, Announcements, Documents, Payments)
+│   └── tenant/             (Dashboard, Lease, Maintenance, Announcements, Documents, Payments, Inspections)
+├── components/SignaturePad.tsx ← reusable canvas-based signature capture, no external library, used by Lease E-Signature (6k)
 ├── lib/maintenanceStyles.ts  ← shared category/priority/status badge config, used by all 4 Maintenance pages (also reused by Vendors for specialty icons)
 ├── lib/announcementStyles.ts ← shared priority badge config, used by all 4 Announcements pages
 ├── lib/documentStyles.ts     ← shared category icon/label config, used by Owner/Manager/Tenant Documents pages
 ├── lib/paymentStyles.ts      ← shared method/status config, used by Owner/Manager/Tenant Payments pages
 ├── lib/expenseStyles.ts      ← shared category icon/label config, used by Owner/Manager Expenses pages
+├── lib/inspectionStyles.ts   ← shared condition badge config, used by Owner/Manager/Tenant Inspections pages
 └── types/index.ts          ← THE canonical UserRole/User/Building/Tenancy/etc. types. Never redeclare UserRole locally anywhere else.
 ```
-All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d), `Announcements` (see 6e), `Documents` (see 6f — Owner/Manager/Tenant only, not Employee, a deliberate scoping choice), the manual Payment system (see 6g — Owner/Manager/Tenant only), Expense tracking (see 6h — Owner/Manager only, which also upgraded `Financial.tsx` from revenue-only to real profit/loss), and Vendor Accounts (see 6i — Owner only, extends Maintenance's assignment flow).
+All pages listed are real and wired to the backend — `Analytics`/`Financial` were placeholders earlier in the project but are now built (see 6b), as is `Maintenance` (see 6d), `Announcements` (see 6e), `Documents` (see 6f — Owner/Manager/Tenant only, not Employee, a deliberate scoping choice), the manual Payment system (see 6g — Owner/Manager/Tenant only), Expense tracking (see 6h — Owner/Manager only, which also upgraded `Financial.tsx` from revenue-only to real profit/loss), Vendor Accounts (see 6i — Owner only, extends Maintenance's assignment flow), Inspection Checklists (see 6j — Owner/Manager/Tenant, not Employee), and Lease E-Signature (see 6k — woven into `Tenants.tsx` and `Lease.tsx` rather than standalone pages).
 
 ### Critical frontend conventions — READ BEFORE TOUCHING API CALLS OR ROUTING
 
@@ -239,18 +241,38 @@ First of the three smaller "remaining features" (vendor accounts, lease e-signat
 - **Frontend**: `owner/Vendors.tsx` (CRUD), plus both `owner/Maintenance.tsx` and `manager/Maintenance.tsx` got their assign dropdown upgraded to a grouped `<optgroup>` select (Staff / Vendors) with the selected value encoded as `"staff:<id>"` or `"vendor:<id>"` and parsed on change.
 - **Two real mistakes made and caught while wiring this in**, worth remembering: (1) the manager page's assign dropdown was given code copied from the owner page that referenced `eligibleStaff` — a variable that only exists in `owner/Maintenance.tsx` (computed inline via `staff.filter(...)`); the manager page's equivalent state is just called `employees` and didn't need filtering at all, since the fetch already scopes `role: 'employee'` server-side. This would have been a `ReferenceError` at render time. (2) A duplicate status-badge `<span>` ended up pasted twice in the manager page's card markup. **Lesson for future instructions**: when giving a "same change as the other file" instruction, state the actual variable/state names per file rather than assuming structural identity — these two pages are similar but not identical, and assuming otherwise is exactly what caused both bugs.
 
+## 6j. Inspection Checklists — seventh brand-new feature
+
+Second of the three smaller "remaining features." Move-in/move-out condition documentation — protects both owner and tenant in security-deposit disputes.
+
+- **New model**: `Inspection.model.js` (migration `create-inspections`). Fields: `tenancyId`, `inspectedById`, `type` (move_in/move_out), `inspectionDate`, `items` (JSONB array of `{area, item, condition, notes, photoUrl}`), `generalNotes`, `status` (draft/completed), `tenantAcknowledged`, `tenantAcknowledgedAt`. **Items are stored as JSONB, not a child table** — a deliberate choice matching the existing convention already used for `Building.extraFields`/`UserProfile.extraFields` in this schema, since a checklist's item list is genuinely flexible/variable-length and doesn't need its own relational table with the overhead that implies.
+- **New feature folder**: `features/inspections/` — mounted at `/api/v1/inspections`. Same owner/manager scoping pattern as Maintenance/Expenses (manager's `buildingId` resolved from their own tenancy, not trusted from the client).
+- **Tenant's one write action**: `PATCH /inspections/:id/acknowledge` — can only acknowledge a `completed` inspection tied to their own tenancy, can't create/edit/delete. This mirrors the Payment Submission review pattern (6g) in spirit: one role creates/manages, another role has a single, narrow confirming action.
+- **Frontend**: `owner/Inspections.tsx` (full checklist builder — quick-add buttons for common areas like Kitchen/Bathroom/Bedroom, inline condition dropdowns per item, a separate "View Details" modal for a read-only pass), `manager/Inspections.tsx` (copied unmodified from the owner version — the `/tenants` fetch is already building-scoped server-side, so no component changes needed, unlike the Vendor Accounts lesson from 6i where assuming identical structure caused a bug; this time the structures genuinely are identical), and `tenant/Inspections.tsx` (read-only + the Acknowledge button).
+
+## 6k. Lease E-Signature — eighth and final roadmap feature
+
+The last of the three smaller "remaining features." Deliberately **not** a DocuSign-level legal e-sign system — a reasonable SaaS-appropriate acknowledgment: a canvas-drawn signature, a typed full legal name, an explicit agreement checkbox, and a timestamp + IP address captured server-side (`req.ip`, one-liner, no extra complexity) for a basic audit trail.
+
+- **New model**: `LeaseSignature.model.js` (migration `create-lease-signatures`). Fields: `tenancyId`, `signerId`, `signerRole` (tenant/owner/manager — snapshotted at signing time), `signatureImageUrl`, `typedName`, `ipAddress`, `agreedAt`. **Append-only by design** — no update or delete endpoint exists, and a unique `(tenancyId, signerId)` DB index prevents the same person signing the same tenancy twice. This is the correct behavior for an audit trail, not a missing feature; if a lease needs re-signing, that's a new `Tenancy` record (a renewal), not a mutated signature on the old one.
+- **New feature folder**: `features/signatures/` — mounted at `/api/v1/signatures`. A tenancy is "fully executed" when signatures exist from both a `tenant` and an `owner`/`manager` — computed on read (`isFullyExecuted` in the `GET /signatures/tenancy/:tenancyId` response), not stored as a separate flag.
+- **New reusable frontend component**: `components/SignaturePad.tsx` — a plain `<canvas>` with pointer events (works for both mouse and touch, no external drawing library), exposing `getSignatureFile()` (returns a PNG `File` ready for `FormData`) and `clear()` via `useImperativeHandle`. Used identically in 3 places: `tenant/Lease.tsx` (sign), `owner/Tenants.tsx` and `manager/Tenants.tsx` (countersign).
+- **Wiring lesson applied from 6i**: before writing instructions for `manager/Tenants.tsx`, the file was read first rather than assumed to mirror `owner/Tenants.tsx` — and it turned out to be a much simpler, earlier-built page (no pagination, no payment-status editing, no toast library even imported) that needed a full rewrite rather than patch-style edits. Checking first instead of assuming avoided repeating the exact mistake that caused the `eligibleStaff` bug in Vendor Accounts.
+
+**This closes out the entire originally-researched feature roadmap.** Eight brand-new features built end-to-end across this session: Maintenance, Announcements, Documents, Manual Payments, Expense Tracking, Vendor Accounts, Inspection Checklists, and Lease E-Signature — every one real, role-scoped, migration-backed, and integrated with what already existed rather than sitting disconnected. What remains in the pending list below is now entirely structural cleanup (layout/table consolidation, audit-log table) plus smaller polish items, not missing functionality.
+
 ## 7. Known-pending / not yet built
 
-- The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — **now proven, not just suspected**, to cause repeat bugs (the sidebar-toggle fix had to be applied 4 separate times). Collapsing into one shared layout + a `useSidebarState()` hook should be a near-term priority, not just a nice-to-have.
-- `Managers.tsx` and `Employees.tsx` are now near-identical — candidate for a shared `StaffTable` component. The employee/tenant `Announcements.tsx` pages, and `owner`/`manager` `Payments.tsx`, `Expenses.tsx`, and `Maintenance.tsx` (for the assign-dropdown logic) are in the same boat (identical logic, copy-pasted, same owner/manager scoping pattern repeated 6 times now across features) — the Vendor Accounts build (6i) is a concrete recent example of this duplication causing an actual bug, so this is worth prioritizing over adding more features for a bit.
-- Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile` once we're back in that area.
-- Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet (this is about the SaaS's own subscription tiers, unrelated to the tenant-to-owner rent payment system in 6g, which is now live).
-- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline and any future "recent activity" feature be genuinely complete rather than synthesized from creation timestamps — Maintenance (6d), Announcements (6e), Documents (6f), Payment submissions (6g), Expenses (6h), and now Vendor assignments (6i) are all real, timestamped event sources that could feed this instead.
-- Dashboard/Analytics/Financial could now incorporate real `PaymentSubmission`/`Expense` events — e.g. a real historical revenue AND cost trend chart is finally possible, since approved payment submissions and dated expenses are real transaction records.
-- `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped) — worth tightening.
-- Remaining researched-but-smaller features not yet built: lease e-signature, move-in/move-out inspection checklists.
+- **Structural cleanup is now the highest-value remaining work**, having shifted from "nice to have" to "actively causing bugs":
+  - The 4 layout files (`OwnerLayout`, `ManagerLayout`, `EmployeeLayout`, `TenantLayout`) are near-duplicates — the sidebar-toggle fix had to be applied 4 separate times.
+  - `Managers.tsx`/`Employees.tsx`, the employee/tenant `Announcements.tsx` pages, `owner`/`manager` `Payments.tsx`/`Expenses.tsx`/`Inspections.tsx`, and the Maintenance assign-dropdown logic all share the same copy-pasted owner/manager (or role-variant) scoping pattern — now **8 features deep**. The Vendor Accounts build (6i) caused a real `ReferenceError` bug directly from this duplication. A shared `StaffTable` component and/or a generic `useRoleScopedList()` hook would fix a bug once instead of N times going forward.
+- Sidebar's "Upgrade Plan" card (Step 1) is still static copy — should pull the real `subscriptionPlan` from `/owner/profile`.
+- Settings' "Upgrade Plan" button is a no-op — no billing/payment feature exists yet (about the SaaS's own subscription tiers, unrelated to the tenant-to-owner rent payment system in 6g, which is live).
+- A proper audit-log table (tracking real events like status changes, not just record creation) would let the dashboard's activity timeline be genuinely complete rather than synthesized from creation timestamps — Maintenance, Announcements, Documents, Payment submissions, Expenses, Vendor assignments, Inspections, and now lease Signatures (6d-6k) are all real, timestamped event sources that could feed this.
+- Dashboard/Analytics/Financial could now incorporate real `PaymentSubmission`/`Expense` events for genuine historical trend charts, since approved payments and dated expenses are real transaction records.
+- `GET /api/v1/buildings` currently allows `authorize("owner", "manager")` but isn't scoped to just the manager's one building at that endpoint (only `/api/v1/manager/building` is properly scoped).
 - No automated tests anywhere yet.
-- `.sequelizerc` / migrations set up — now 9 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`, `create-documents`, `create-payment-accounts`, `create-payment-submissions`, `create-expenses`, `create-vendors`, `add-vendor-to-maintenance-requests`) — future schema changes need new migration files, not manual edits to models + hope.
+- `.sequelizerc` / migrations — now 12 migrations exist (`create-initial-schema`, `create-maintenance-requests`, `create-announcements`, `create-documents`, `create-payment-accounts`, `create-payment-submissions`, `create-expenses`, `create-vendors`, `add-vendor-to-maintenance-requests`, `create-inspections`, `create-lease-signatures`) — future schema changes need new migration files, not manual edits to models + hope.
 
 ## 8. How to resume in a new chat
 
