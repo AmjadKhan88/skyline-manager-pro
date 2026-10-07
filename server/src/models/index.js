@@ -37,6 +37,7 @@ import Vendor from "./Vendor.model.js";
 import Inspection from "./Inspection.model.js";
 import LeaseSignature from "./LeaseSignature.model.js";
 import RentCharge from "./RentCharge.model.js";
+import Notification from "./Notification.model.js";
 // Re-export for convenient destructured imports
 export {
   User,
@@ -55,4 +56,5 @@ export {
   Inspection,
   LeaseSignature,
   RentCharge,
+  Notification,
 };

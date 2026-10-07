@@ -45,6 +45,8 @@ import Inspection from "./Inspection.model.js";
 import LeaseSignature from "./LeaseSignature.model.js";
 import RentCharge from "./RentCharge.model.js";
 
+import Notification from "./Notification.model.js";
+
 // ─── 1. Owner Profile (1:1) ────────────────────────────────────────────────
 User.hasOne(OwnerProfile, {
   foreignKey: "userId",
@@ -270,6 +272,10 @@ PaymentSubmission.belongsTo(RentCharge, {
   as: "rentCharge",
 });
 
+// Notifications
+User.hasMany(Notification, { foreignKey: "recipientId", as: "notifications" });
+Notification.belongsTo(User, { foreignKey: "recipientId", as: "recipient" });
+
 export {
   User,
   OwnerProfile,
@@ -283,4 +289,5 @@ export {
   Inspection,
   LeaseSignature,
   RentCharge,
+  Notification,
 };
